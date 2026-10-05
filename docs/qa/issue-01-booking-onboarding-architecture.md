@@ -11,7 +11,7 @@ Tài liệu cho R05 Cal.diy + K02 Model-Based Testing, chuẩn bị báo cáo gi
 
 ## 2. Cài trên máy Windows mới
 
-Cần Git, PowerShell, Docker Desktop với Linux containers và quyền kéo image. **Chưa kiểm chứng trên máy mới:** phiên bản Windows, RAM/đĩa tối thiểu và thời gian khởi động. Ghi `docker version` và `docker compose version` của máy kiểm thử, không áp một con số giả định.
+Cần Git, PowerShell, Docker Desktop với Linux containers và quyền kéo image. Các lệnh PowerShell dưới đây đã kiểm tra với PowerShell 7.6.5; **chưa kiểm tra với Windows PowerShell 5.1**. **Chưa kiểm chứng trên máy mới:** phiên bản Windows, RAM/đĩa tối thiểu và thời gian khởi động. Ghi `docker version` và `docker compose version` của máy kiểm thử, không áp một con số giả định.
 
 ```powershell
 git clone https://github.com/BoyTay/cal.diy.git
@@ -21,7 +21,32 @@ git rev-parse HEAD
 Copy-Item .env.example .env
 ```
 
-Trong `.env` cục bộ, tạo giá trị ngẫu nhiên **riêng cho từng máy** cho `NEXTAUTH_SECRET`, `CALENDSO_ENCRYPTION_KEY` (32 ký tự/byte theo hướng dẫn trong [README](../../README.md#running-caldiy-with-docker-compose)) và `JWT_SECRET` nếu chạy API v2. Có thể tạo bằng PowerShell mà không in bí mật ra terminal: mở `.env` trong editor cục bộ, sinh bằng `[Convert]::ToBase64String([Security.Cryptography.RandomNumberGenerator]::GetBytes(32))` cho secret; với khóa mã hóa 32 ký tự, dùng Base64 của 24 byte. Không sao chép secret từ máy khác.
+Trong `.env` cục bộ, tạo giá trị ngẫu nhiên **riêng cho từng máy** cho `NEXTAUTH_SECRET`, `CALENDSO_ENCRYPTION_KEY` (32 ký tự theo hướng dẫn trong [README](../../README.md#running-caldiy-with-docker-compose)) và `JWT_SECRET` nếu chạy API v2. PowerShell 7.6.5 hỗ trợ `RandomNumberGenerator.GetBytes(int)`; đoạn sau ghi thẳng secret vào `.env` và **không in giá trị ra terminal**:
+
+```powershell
+function Set-LocalEnvSecret([string]$name, [int]$byteCount) {
+    $value = [Convert]::ToBase64String(
+        [Security.Cryptography.RandomNumberGenerator]::GetBytes($byteCount)
+    )
+    $lines = @(Get-Content -LiteralPath .env)
+    $found = $false
+    $lines = @($lines | ForEach-Object {
+        if ($_ -match "^$([regex]::Escape($name))=") {
+            $found = $true
+            "$name=$value"
+        } else {
+            $_
+        }
+    })
+    if (-not $found) { $lines += "$name=$value" }
+    $lines | Set-Content -LiteralPath .env -Encoding utf8
+}
+Set-LocalEnvSecret NEXTAUTH_SECRET 32
+Set-LocalEnvSecret CALENDSO_ENCRYPTION_KEY 24
+Set-LocalEnvSecret JWT_SECRET 32
+```
+
+Base64 của 24 byte dài 32 ký tự. Nếu chỉ chạy biểu thức `[Convert]::ToBase64String(...)` trong PowerShell để sao chép thủ công, **secret sẽ hiển thị trong terminal và lịch sử cuộn**; tránh đưa ảnh chụp hoặc transcript đó vào báo cáo. Không sao chép secret từ máy khác.
 
 **Đối chiếu cấu hình:** [Compose](../../docker-compose.yml) dùng `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB`, `DATABASE_HOST` khi tạo URL cho web/API/Studio, trong khi các biến này không có trong `.env.example` tại commit đã chốt. Bổ sung chúng vào `.env` theo service `database` trong Compose (`DATABASE_HOST=database`, user/database/password phải khớp các giá trị hardcode hiện tại). Đặt `DATABASE_URL` và `DATABASE_DIRECT_URL` theo cùng URL nội bộ `postgresql://<user>:<password>@database:5432/<db>`. Các thông tin mặc định của Compose chỉ phù hợp máy kiểm thử cô lập; trước khi đưa stack ra mạng ngoài phải thay mật khẩu trong Compose **và** `.env` đồng bộ. `NEXT_PUBLIC_WEBAPP_URL`/`NEXTAUTH_URL` cần khớp địa chỉ web; API v2 dùng `API_PORT` (mặc định 80) và `REDIS_URL` theo mạng Compose. **Chưa kiểm chứng:** bộ giá trị `.env` tối thiểu cho lần cài sạch; không đưa file `.env` hay kết quả `docker compose config` vào báo cáo vì có thể chứa secret.
 
@@ -38,7 +63,26 @@ Mở `http://localhost:3000` cho web và `http://localhost:5555` cho Studio theo
 
 Ngày 05/10/2026, `docker compose ps` cho thấy `calcom-api`, `database`, `redis` running; `calcom` và `studio` running/healthy. Docker client 29.4.1 và Compose v5.1.3. Metadata của container cho thấy chúng được tạo từ checkout `.../Software Testing/Ex/cal.diy`, **không phải checkout Scheduling của tài liệu này**. Vì thế đây chỉ là bằng chứng môi trường đã có stack hoạt động, không xác nhận lệnh dựng từ máy mới hoặc HTTP/booking flow trên nhánh Issue 01. Compose cũng cảnh báo nhiều biến tùy chọn đang để trống.
 
-## 3. Sơ đồ module đã đối chiếu
+Xác minh lại trên **đúng checkout PR** `.../Software Testing/Scheduling/cal.diy` tại `fdac3b85c1ea9de47eb8bcfccae26b0908836263`: `docker compose -p caldiy-issue01 config --services` liệt kê `redis`, `database`, `studio`, `calcom`, `calcom-api`; `docker compose -p caldiy-issue01 ps --format json` không liệt kê container nào. Không có container hiện chạy được xác nhận là tạo từ checkout này. **Chưa kiểm chứng trên checkout PR:** khởi động stack, HTTP và toàn bộ luồng booking.
+
+## 3. Sơ đồ container/component
+
+Sơ đồ này dựa vào [docker-compose.yml](../../docker-compose.yml): các cạnh `depends_on`, biến kết nối và cổng công bố. Nó mô tả cấu hình triển khai; chưa chứng minh request booking thực tế đi qua API v2 hay Redis.
+
+```mermaid
+flowchart LR
+  Browser[Trình duyệt] -->|localhost:3000| Web[calcom / Next.js web]
+  ApiClient[Client API v2] -->|API_PORT mặc định 80| Api[calcom-api / API v2]
+  Operator[Người vận hành] -->|localhost:5555| Studio[studio / Prisma Studio]
+  Web -->|DATABASE_URL; depends_on| Postgres[(database / PostgreSQL)]
+  Api -->|DATABASE_URL; depends_on| Postgres
+  Api -->|REDIS_URL; depends_on| Redis[(redis)]
+  Studio -->|DATABASE_URL; depends_on| Postgres
+```
+
+`calcom` dùng [Dockerfile](../../Dockerfile), `calcom-api` dùng [Dockerfile API v2](../../apps/api/v2/Dockerfile); `database` và `redis` dùng image theo Compose, còn `studio` dùng image Cal.diy với lệnh Prisma Studio. Tất cả ở mạng `stack`; cổng Redis 6379 cũng được công bố theo cấu hình mặc định. Các image `postgres`, `redis:latest` và Cal.diy không được ghim digest trong Compose, nên SHA Git không tự cố định image đã kéo.
+
+## 4. Sơ đồ luồng module đã đối chiếu
 
 ```mermaid
 flowchart LR
@@ -63,7 +107,7 @@ flowchart LR
 
 Các cạnh trong sơ đồ là đường gọi trong mã cho luồng web cơ bản, không phải sơ đồ toàn bộ deployment. [Compose](../../docker-compose.yml) còn có `calcom-api` (API v2), Redis và Studio; **chưa xác minh** chúng có tham gia từng request web nêu trên. Không gán mọi thao tác cho API v2 chỉ vì container này tồn tại.
 
-## 4. Năm luồng dữ liệu phục vụ MBT
+## 5. Năm luồng dữ liệu phục vụ MBT
 
 1. **Tạo event type.** [Hook web](../../apps/web/modules/event-types/hooks/useCreateEventType.ts) gọi `trpc.viewer.eventTypesHeavy.create`; [router](../../packages/trpc/server/routers/viewer/eventTypes/heavy/_router.ts) kiểm tra đăng nhập, kiểm tra schema và gọi [handler](../../packages/trpc/server/routers/viewer/eventTypes/heavy/create.handler.ts), nơi ghép owner, schedule và location trước khi lưu. Dữ liệu thuộc model [EventType](../../packages/prisma/schema.prisma). Quan sát: ID/slug, duration, schedule được gắn; **chưa chạy UI** để xác nhận trạng thái cụ thể.
 2. **Sửa availability và lấy slot.** [UI availability](../../apps/web/modules/availability/availability-view.tsx) gọi `availability.schedule.update`; [handler](../../packages/trpc/server/routers/viewer/availability/schedule/update.handler.ts) chuyển vào [ScheduleService](../../packages/features/schedules/services/ScheduleService.ts) để cập nhật `Schedule`/`Availability`. [useSchedule](../../apps/web/modules/schedules/hooks/useSchedule.ts) gọi `slots.getSchedule`; [handler slot](../../packages/trpc/server/routers/viewer/slots/getSchedule.handler.ts) dùng `AvailableSlotsService`. Quan sát: slot A/B theo múi giờ host và booker; **chưa chạy thử** trường hợp thay đổi schedule làm đổi slot.
@@ -73,7 +117,7 @@ Các cạnh trong sơ đồ là đường gọi trong mã cho luồng web cơ b�
 
 Các model liên quan được định nghĩa trong [schema Prisma](../../packages/prisma/schema.prisma): `EventType`, `Booking`, `Schedule`, `Availability` và `BookingStatus`. Những đường gọi trên là bằng chứng tĩnh từ mã nguồn; các điều kiện phân nhánh, tích hợp ngoài, thời điểm notification và hành vi lỗi cần kiểm chứng riêng trước khi đưa vào state machine MBT.
 
-## 5. Bằng chứng còn cần thu trước 20/10
+## 6. Bằng chứng còn cần thu trước 20/10
 
 - Lặp lại cài đặt từ checkout sạch trên máy/profile Docker mới; ghi SHA, phiên bản Docker/Compose, trạng thái service, HTTP web/Studio và ảnh đã che dữ liệu nhạy cảm.
 - Với event type cá nhân 30 phút và hai slot tương lai, ghi múi giờ host/booker; thu trước/sau cho tạo event type, sửa availability, đặt A, đổi A→B, hủy B. Đối chiếu cả UI và dữ liệu chỉ đọc theo UID, không chỉ dựa vào toast.
