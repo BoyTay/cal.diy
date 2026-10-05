@@ -481,10 +481,10 @@ Note: `docker compose` without the hyphen is now the primary method of using doc
 
 #### Issue 01 local QA quick start (PowerShell)
 
-On the `qa/model-based-booking` checkout, prepare a local `.env` and configure its database variables and unique secrets as described in the [Issue 01 setup and booking architecture guide](docs/qa/issue-01-booking-onboarding-architecture.md). Keep `.env` out of Git.
+On the `qa/model-based-booking` checkout, copy `.env.example` only if `.env` does not already exist; keep any existing local configuration. Configure its database variables and unique secrets as described in the [Issue 01 setup and booking architecture guide](docs/qa/issue-01-booking-onboarding-architecture.md). Keep `.env` out of Git.
 
 ```powershell
-Copy-Item .env.example .env
+if (-not (Test-Path -LiteralPath .env)) { Copy-Item .env.example .env }
 docker compose -p caldiy-pr01 up -d --build --quiet-build --quiet-pull
 docker compose -p caldiy-pr01 ps
 ```
