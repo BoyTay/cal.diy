@@ -63,7 +63,7 @@ Mở `http://localhost:3000` cho web và `http://localhost:5555` cho Studio theo
 
 Ngày 05/10/2026, `docker compose ps` cho thấy `calcom-api`, `database`, `redis` running; `calcom` và `studio` running/healthy. Docker client 29.4.1 và Compose v5.1.3. Metadata của container cho thấy chúng được tạo từ checkout `.../Software Testing/Ex/cal.diy`, **không phải checkout Scheduling của tài liệu này**. Vì thế đây chỉ là bằng chứng môi trường đã có stack hoạt động, không xác nhận lệnh dựng từ máy mới hoặc HTTP/booking flow trên nhánh Issue 01. Compose cũng cảnh báo nhiều biến tùy chọn đang để trống.
 
-Xác minh lại trên **đúng checkout PR** `.../Software Testing/Scheduling/cal.diy` tại `fdac3b85c1ea9de47eb8bcfccae26b0908836263`: `docker compose -p caldiy-issue01 config --services` liệt kê `redis`, `database`, `studio`, `calcom`, `calcom-api`; `docker compose -p caldiy-issue01 ps --format json` không liệt kê container nào. Không có container hiện chạy được xác nhận là tạo từ checkout này. **Chưa kiểm chứng trên checkout PR:** khởi động stack, HTTP và toàn bộ luồng booking.
+Ở lần rà soát trước trên **đúng checkout PR** tại `fdac3b85c1ea9de47eb8bcfccae26b0908836263`, `docker compose -p caldiy-issue01 config --services` liệt kê năm service nhưng `ps` không liệt kê container nào. Kết quả này chỉ mô tả trạng thái trước lần chạy mới ở mục 6.
 
 ## 3. Sơ đồ container/component
 
@@ -117,8 +117,17 @@ Các cạnh trong sơ đồ là đường gọi trong mã cho luồng web cơ b�
 
 Các model liên quan được định nghĩa trong [schema Prisma](../../packages/prisma/schema.prisma): `EventType`, `Booking`, `Schedule`, `Availability` và `BookingStatus`. Những đường gọi trên là bằng chứng tĩnh từ mã nguồn; các điều kiện phân nhánh, tích hợp ngoài, thời điểm notification và hành vi lỗi cần kiểm chứng riêng trước khi đưa vào state machine MBT.
 
-## 6. Bằng chứng còn cần thu trước 20/10
+## 6. Lần chạy trên đúng checkout PR (05/10/2026)
 
-- Lặp lại cài đặt từ checkout sạch trên máy/profile Docker mới; ghi SHA, phiên bản Docker/Compose, trạng thái service, HTTP web/Studio và ảnh đã che dữ liệu nhạy cảm.
-- Với event type cá nhân 30 phút và hai slot tương lai, ghi múi giờ host/booker; thu trước/sau cho tạo event type, sửa availability, đặt A, đổi A→B, hủy B. Đối chiếu cả UI và dữ liệu chỉ đọc theo UID, không chỉ dựa vào toast.
+- Trước khi chạy: nhánh `qa/issue-01-booking-onboarding` sạch tại `7cb8d42c98d38a30171b20d95c5d3775a302e43b`. `.env` cục bộ bị Git bỏ qua; các biến secret và kết nối chính có giá trị nhưng không được in. `DATABASE_HOST` ban đầu không khớp service `database` trong Compose; đã sửa **chỉ trong `.env` cục bộ**.
+- Project `caldiy` cũ được Docker gắn nhãn checkout `.../Software Testing/Ex/cal.diy` và chiếm cổng 3000, 5555, 6379, 8080 cùng tên container `database` và `calcom-api`. File Compose ở đường dẫn `Ex` không còn trên đĩa, nên lệnh `docker compose -p caldiy down` được chạy từ checkout PR để dừng đúng project đã nhận diện, **không dùng `-v`**. Các volume `caldiy_database-data` và `caldiy_redis-data` vẫn tồn tại sau khi dừng.
+- Từ checkout `.../Software Testing/Scheduling/cal.diy`, lệnh `docker compose -p caldiy-pr01 up -d --build --quiet-build --quiet-pull` thành công. Label `com.docker.compose.project.working_dir` của web trỏ đúng checkout này. Docker client/server 29.4.1; Compose v5.1.3. Năm service `database`, `redis`, `calcom-api`, `calcom`, `studio` đều `running`; hai service có healthcheck là `calcom` và `studio` đều `healthy`. HTTP `GET /` trả 307 tới trang setup; theo redirect, trang setup trả 200 và trình duyệt mở được UI.
+- Trong database riêng của project `caldiy-pr01`, đã tạo quản trị viên thử nghiệm bằng email giả và mật khẩu ngẫu nhiên không in ra terminal. Onboarding chọn personal use, bỏ qua lịch ngoài; UI xác nhận timezone host `Asia/Saigon`. UI tạo sẵn event type cá nhân `30 min meeting`, ID 2, slug `30min`, đang bật; tab Basics và truy vấn PostgreSQL chỉ đọc đều cho duration 30 phút. Đã tạo schedule `QA 30min schedule`, ID 1; dữ liệu chỉ đọc ghi timezone `Asia/Saigon`, Monday–Friday 09:00–17:00 trên UI.
+- Trang công khai `/qa-booking/30min` hiển thị các slot tương lai ngày **06/10/2026**; chọn A **10:00–10:30** và quan sát B **11:00–11:30**. Nhãn timezone ở lịch ban đầu là `Asia/Phnom Penh`, trong form A là `Asia/Saigon`; cả hai phải được ghi nguyên dạng trong bằng chứng, không tự đồng nhất nhãn. Ảnh màn hình slot đã được chụp trong phiên với dữ liệu giả, không có secret thật; **chưa lưu được ảnh vào repo** vì công cụ chụp màn hình báo `EPERM` khi ghi file vào checkout.
+- Form UI của A đã điền khách giả nhưng **chưa bấm Confirm**. Sau khi nhận xác nhận của người dùng để bấm, công cụ trình duyệt bị cơ chế duyệt tự động từ chối do **giới hạn sử dụng** (thông báo gợi ý thử lại lúc 22:35 giờ Asia/Saigon); thao tác không được thực hiện. Truy vấn PostgreSQL chỉ đọc sau đó cho `count(*) = 0` với `Booking.eventTypeId = 2`. Vì vậy UID booking: **chưa có**; trạng thái trước: **không có booking**; trạng thái sau: **không thay đổi**. Đổi A→B và hủy B **chưa thể thử**, không được đánh dấu đạt.
+
+## 7. Bằng chứng còn cần thu trước 20/10
+
+- Lặp lại cài đặt trên máy/profile Docker khác để kiểm tra khả năng tái lập; lần chạy trên checkout PR nêu trên chỉ xác nhận môi trường hiện tại.
+- Sau khi công cụ trình duyệt dùng lại được, lưu ảnh bằng chứng đã che dữ liệu nhạy cảm và thu trước/sau cho đặt A, đổi A→B, hủy B. Đối chiếu UI với truy vấn dữ liệu chỉ đọc theo UID, không chỉ dựa vào toast.
 - Ghi rõ booking status, liên hệ UID cũ/mới và trường hợp slot không còn khả dụng sau thử nghiệm; chỉ sau đó mới chốt trạng thái và chuyển tiếp của mô hình MBT.
