@@ -80,7 +80,16 @@ flowchart LR
   Studio -->|DATABASE_URL; depends_on| Postgres
 ```
 
-`calcom` dùng [Dockerfile](../../Dockerfile), `calcom-api` dùng [Dockerfile API v2](../../apps/api/v2/Dockerfile); `database` và `redis` dùng image theo Compose, còn `studio` dùng image Cal.diy với lệnh Prisma Studio. Tất cả ở mạng `stack`; cổng Redis 6379 cũng được công bố theo cấu hình mặc định. Các image `postgres`, `redis:latest` và Cal.diy không được ghim digest trong Compose, nên SHA Git không tự cố định image đã kéo.
+`calcom` dùng [Dockerfile](../../Dockerfile), `calcom-api` dùng [Dockerfile API v2](../../apps/api/v2/Dockerfile); `database` và `redis` dùng image theo Compose, còn `studio` dùng image Cal.diy với lệnh Prisma Studio. Tất cả ở mạng `stack`; cổng Redis 6379 cũng được công bố theo cấu hình mặc định. Image `postgres` và `redis` đã được ghim digest trong Compose (bảng dưới); image `calcom` và `studio` được build cục bộ từ Dockerfile nên cố định bằng SHA/tag Git của repo.
+
+Digest ghim ngày 10/10/2026, đúng bản đã chạy thử (container `database` dùng image `5a5a84b19854`):
+
+| Service | Image trong Compose | Phiên bản | Digest |
+| --- | --- | --- | --- |
+| database | `postgres:18` | PostgreSQL 18.6 | `sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722` |
+| redis | `redis:8` | Redis 8.10.2 | `sha256:6f81e8915c60b065a524e6967e0ad1c639ba6efa84d669f823683ea04d9150ee` |
+
+Docker chỉ dùng phần digest sau `@sha256:`; phần `:18`, `:8` chỉ để người đọc nhận biết phiên bản. Image `calcom.docker.scarf.sh/calcom/cal.diy` không có digest registry vì được build trên máy chạy; ghi `git rev-parse HEAD` hoặc tag `mbt-baseline-1` khi thu bằng chứng.
 
 ## 4. Sơ đồ luồng module đã đối chiếu
 

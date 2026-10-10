@@ -12,7 +12,7 @@ networks:
 services:
   database:
     container_name: database
-    image: postgres
+    image: postgres:18@sha256:5a5a84b19854a9ffaa54082c166ff4ec27473a361e496e5ea167f298f2da9722
     restart: always
     volumes:
       - database-data:/var/lib/postgresql
@@ -25,7 +25,7 @@ services:
 
   redis:
     container_name: redis
-    image: redis:latest
+    image: redis:8@sha256:6f81e8915c60b065a524e6967e0ad1c639ba6efa84d669f823683ea04d9150ee
     restart: always
     volumes:
       - redis-data:/data
