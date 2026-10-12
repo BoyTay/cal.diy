@@ -122,7 +122,13 @@ if (evidence.errors.length === 0) {
         {
           encoding: "utf8",
           timeout: 2_000_000,
-          env: { ...process.env, MBT_PATH: pathFile, MBT_EVIDENCE: evidenceFile, NEXT_PUBLIC_IS_E2E: "1" },
+          env: {
+            ...process.env,
+            MBT_PATH: pathFile,
+            MBT_EVIDENCE: evidenceFile,
+            NEXT_PUBLIC_IS_E2E: "1",
+            PLAYWRIGHT_NO_COPY_PROMPT: "1",
+          },
         }
       );
       Object.assign(evidence, JSON.parse(readFileSync(evidenceFile, "utf8")));

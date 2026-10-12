@@ -1,9 +1,11 @@
+import { resolve } from "node:path";
 import { defineConfig } from "@playwright/test";
 import dotenv from "dotenv";
 
 dotenv.config({ path: ".env" });
 
 export default defineConfig({
+  outputDir: resolve("test-results/mbt/results"),
   testDir: ".",
   testMatch: "issue-06.e2e.ts",
   workers: 1,

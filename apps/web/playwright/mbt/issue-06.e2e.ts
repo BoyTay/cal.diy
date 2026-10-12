@@ -49,6 +49,9 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
   const read = () => prisma.booking.findMany({ where: { eventTypeId }, select });
   const actionIndex = async (uid: string | undefined) => {
     const actions = page.getByTestId("booking-actions-dropdown");
+    operation = "wait for upcoming booking actions to load";
+    await actions.first().waitFor({ state: "visible" });
+    operation = "find the synthetic booking in the loaded action menus";
     for (let i = 0; i < (await actions.count()); i++) {
       await actions.nth(i).click();
       const candidate = await page.getByTestId("cancel").getAttribute("data-booking-uid");

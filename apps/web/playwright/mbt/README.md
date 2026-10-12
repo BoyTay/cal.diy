@@ -102,7 +102,9 @@ vertex pass / 5. Pass toàn harness cần cả hai đạt 100%. Fail khi oracle 
 chưa kiểm chứng khi chưa hoàn tất action/DB hoặc thiếu môi trường.
 Generate-only không chứng minh booking pass. Runner trả mã lỗi nếu không pass.
 
-Tắt reporter/trace/screenshot/video; runner giữ output browser trong bộ nhớ và
+Tắt reporter/trace/screenshot/video và snapshot lỗi tự động
+(`PLAYWRIGHT_NO_COPY_PROMPT=1`); artifact nằm trong `test-results/mbt/results`
+được Git bỏ qua. Runner giữ output browser trong bộ nhớ và
 không xuất nó. Lỗi browser được thay bằng lý do an toàn; lỗi công cụ preflight
 không chứa booking data được giữ nguyên văn. Không đính kèm output server thô.
 
