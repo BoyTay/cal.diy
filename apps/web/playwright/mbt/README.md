@@ -114,3 +114,18 @@ Ngay sau mỗi lần chạy, gửi file evidence cùng coverage cho **@anvodangi
 
 Giới hạn: chỉ model cá nhân 6 edge/5 vertex; chưa chứng minh PENDING, REJECTED,
 AWAITING_HOST, token guards, seats, recurring, payment/calendar/email/webhook.
+
+## Kết quả thực tế ngày 13/10/2026
+
+Lần chạy trên SHA `67f426243f8553b73e0d3059e30cb0248f8e10ab`, `dirty=false`,
+đã pass 25 bước: **edge 6/6 (100%), vertex 5/5 (100%)**.
+[Evidence](../../../../docs/qa/evidence/issue-06-2026-10-12T19-31-46-588Z.json)
+ghi HTTP 409 khi slot bị chặn, A giữ nguyên, không có B và
+`urlDateMatchesRequestStart=false`: `date` không phải giờ slot đã chọn.
+Edge bắt đầu phiên mới cũng pass, giữ nguyên dữ liệu booking đã hủy.
+
+Hai lần trước dừng ở lookup UI, chỉ đạt 1/6 edge và 2/5 vertex; các edge
+chưa gửi request được ghi “chưa kiểm chứng”. Mỗi lần đã gửi log vào Issue #7.
+Biome exit 0 (còn cảnh báo độ dài hàm); kiểm tra type riêng hai file TS đạt
+0 diagnostics. `yarn type-check:ci --force --concurrency=2` toàn repo đã chạy
+nhưng dừng với **`Error: spawn tsc ENOENT`** trên Windows, không ghi là đạt.
