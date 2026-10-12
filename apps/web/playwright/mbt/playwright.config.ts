@@ -16,6 +16,21 @@ export default defineConfig({
     headless: true,
     locale: "en-US",
     timezoneId: "Asia/Saigon",
+    storageState: {
+      origins: [],
+      cookies: [
+        {
+          domain: "localhost",
+          path: "/",
+          name: "calcom-timezone-dialog",
+          value: "1",
+          expires: -1,
+          httpOnly: false,
+          secure: false,
+          sameSite: "Lax",
+        },
+      ],
+    },
     trace: "off",
     screenshot: "off",
     video: "off",

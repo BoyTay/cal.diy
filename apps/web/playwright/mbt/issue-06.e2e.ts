@@ -53,9 +53,9 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
     await actions.first().waitFor({ state: "visible" });
     operation = "find the synthetic booking in the loaded action menus";
     for (let i = 0; i < (await actions.count()); i++) {
-      await actions.nth(i).click();
-      const candidate = await page.getByTestId("cancel").getAttribute("data-booking-uid");
-      await page.keyboard.press("Escape");
+      const candidate = await actions
+        .nth(i)
+        .evaluate((node) => node.closest('[data-testid="booking-item"]')?.getAttribute("data-booking-uid"));
       if (candidate === uid) return i;
     }
     required(false);
@@ -78,10 +78,9 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
     if (!host) return;
     await host.apiLogin();
     await page.goto("/bookings/upcoming");
-    await page
-      .getByTestId("booking-actions-dropdown")
-      .nth(await actionIndex(a))
-      .click();
+    const nth = await actionIndex(a);
+    operation = "open the original booking reschedule action";
+    await page.getByTestId("booking-actions-dropdown").nth(nth).click();
     await page.getByTestId("reschedule").click();
     await page.waitForURL((url) => url.searchParams.has("rescheduleUid"));
     rescheduleUrl = page.url();
