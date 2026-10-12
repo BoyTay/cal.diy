@@ -9,29 +9,38 @@ email/token/UID/URL quản lý. Không dùng tài khoản thật hoặc database
 
 Windows, PowerShell 7, Node theo phiên bản của repo (Issue 04 dùng 20.20.2),
 Yarn 4.12.0, Docker Desktop, PostgreSQL 17-alpine, Chromium Playwright,
-Java **11**, GraphWalker **4.3.3**. **KHÔNG dùng Java 25**.
+Temurin JDK **21**, GraphWalker **4.3.3**. Runner chấp nhận Java 11..21,
+từ chối Java >=22. **KHÔNG dùng Java 25**.
 Tải JAR từ [release chính thức](https://github.com/GraphWalker/graphwalker-project/releases/tag/4.3.3)
 về `tools/graphwalker/graphwalker-cli-4.3.3.jar`, giữ cục bộ và không commit.
-Đặt Java 11 vào PATH rồi kiểm tra `java -version`.
+Đặt JDK 21 vào PATH rồi kiểm tra `java -version`.
 
-Lần chạy evidence hiện tại (13/10/2026 Asia/Saigon) có Node v24.21.0,
-Docker CLI 29.8.0, chưa xác minh Docker Engine/PostgreSQL; output thử Java:
+Môi trường chuẩn bị ngày 13/10/2026: Node 20.20.2, Docker CLI 29.8.0,
+PostgreSQL 17-alpine và Chromium 143. Output `java -version` thực tế:
 
 ```text
-spawnSync java ENOENT
+openjdk version "21.0.12.1" 2026-08-18 LTS
+OpenJDK Runtime Environment Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.12.1+1 (build 21.0.12.1+1-LTS, mixed mode, sharing)
 ```
 
-Đây là lỗi không tìm thấy Java, không phải phiên bản Java đã đạt yêu cầu.
-GraphWalker JAR và node_modules cũng chưa có. Chưa chạy UI/API/DB.
+GraphWalker check trả `No issues found with the model(s).` Lần evidence cũ
+0% ghi thiếu runtime; kết quả các lần chạy mới nằm trong `docs/qa/evidence/`.
 
 ## Chạy từ thư mục gốc repo
 
 Không thêm dependency hoặc sửa schema. Cài các dependency đã có trong lockfile:
 
 ```powershell
-node .yarn/releases/yarn-4.12.0.cjs install --immutable
-node .yarn/releases/yarn-4.12.0.cjs playwright install chromium
+$env:ISSUE04_NODE_EXECUTABLE = (Resolve-Path tools/issue06-env/node-v20.20.2-win-x64/node.exe).Path
+$env:PATH = (Split-Path -Parent $env:ISSUE04_NODE_EXECUTABLE) + ";" + $env:PATH
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Get-Location) "tools/issue06-env/playwright-browsers"
+$env:PATH = (Resolve-Path 'tools/issue06-env/jdk-21.0.12.1+1/bin').Path + ";" + $env:PATH
+gh release download 4.3.3 --repo GraphWalker/graphwalker-project --pattern "graphwalker-cli-4.3.3.jar" --dir tools/graphwalker
+corepack yarn install --immutable
+corepack yarn playwright install chromium
 pwsh -File scripts/prepare-issue-04-env.ps1
+docker pull postgres:17-alpine
 pwsh -File scripts/start-issue-04-db.ps1
 pwsh -File scripts/run-issue-04-local.ps1 prisma migrate deploy
 pwsh -File scripts/run-issue-04-local.ps1 prisma generate
@@ -69,14 +78,15 @@ node .yarn/releases/yarn-4.12.0.cjs type-check:ci --force
 
 ## Hai edge khó
 
-`e_RescheduleSlotUnavailable`: chọn slot qua helper trước, đọc `date` từ URL
-chỉ trong bộ nhớ, rồi dùng fixture `bookings.create` chặn đúng khoảng slot
-cho cùng host/event type. Sau đó gửi form reschedule còn giữ slot cũ.
+`e_RescheduleSlotUnavailable`: chọn slot qua helper trước, rồi intercept request
+reschedule ngay trước khi gửi đến server. Dùng `start/end` trong body request
+để fixture `bookings.create` chặn đúng khoảng slot cho cùng host/event type,
+sau đó tiếp tục request cũ. `date` trong URL có thể chỉ là ngày; `slot` mới
+chứa giờ chọn. Log chỉ ghi UTC start/end và cờ so sánh URL date với request.
 Yêu cầu HTTP 4xx và DB chứng minh A không thay đổi, vẫn ACCEPTED, không có
 booking với `fromReschedule=A`. Blocker không được tính là B và được giữ lại
 để `e_SelectAnotherSlot` chứng minh chọn slot khác không trùng blocker.
 Nếu UI ngăn gửi request hoặc timeout, edge ghi **chưa kiểm chứng**, không pass.
-Chưa xác minh thực nghiệm selector/URL `date` và hành vi stale form trên máy này.
 
 `e_StartNewBooking`: snapshot booking của phiên cũ, tạo host/event type giả
 mới và mở trang booking mới. DB của phiên mới phải rỗng; snapshot phiên cũ
@@ -97,8 +107,8 @@ không xuất nó. Lỗi browser được thay bằng lý do an toàn; lỗi cô
 không chứa booking data được giữ nguyên văn. Không đính kèm output server thô.
 
 Ngay sau mỗi lần chạy, gửi file evidence cùng coverage cho **@anvodangiu**
-(Issue #7, Phần G) và báo **@BoyTay**. Môi trường hiện không có GitHub CLI hoặc
-connector gửi GitHub nên chưa gửi được; không coi bản ghi cục bộ là đã báo cáo.
+(Issue #7, Phần G) và báo **@BoyTay** qua comment Issue #7 bằng
+`gh issue comment 7 --repo BoyTay/cal.diy --body-file <file đã lọc>`.
 
 Giới hạn: chỉ model cá nhân 6 edge/5 vertex; chưa chứng minh PENDING, REJECTED,
 AWAITING_HOST, token guards, seats, recurring, payment/calendar/email/webhook.
