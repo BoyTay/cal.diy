@@ -154,7 +154,10 @@ jobs:
         env:
           NEXT_PUBLIC_IS_E2E: "1"
         run: |
-          nohup pwsh -File scripts/run-issue-04-local.ps1 workspace @calcom/web dev -p 3000 > "$RUNNER_TEMP/web.log" 2>&1 &
+          # '-p' phải đặt trong dấu nháy: nếu không PowerShell hiểu là tham số của chính nó
+          # ("parameter name 'p' is ambiguous") và web không khởi động.
+          nohup pwsh -NoProfile -Command "./scripts/run-issue-04-local.ps1 workspace @calcom/web dev '-p' 3000" > "$RUNNER_TEMP/web.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/web.pid"
           echo "web started"
 
       - name: Đợi web trả lời
@@ -162,6 +165,7 @@ jobs:
           for i in $(seq 1 120); do
             code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 http://localhost:3000/ || true)
             echo "lần $i: HTTP $code"
+            kill -0 "$(cat "$RUNNER_TEMP/web.pid")" 2>/dev/null || { echo "Tiến trình web đã thoát" >&2; exit 1; }
             case "$code" in 200|301|302|307|308) exit 0 ;; esac
             sleep 5
           done
