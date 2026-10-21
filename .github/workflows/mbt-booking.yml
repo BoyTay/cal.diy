@@ -1,0 +1,242 @@
+# Workflow CI cho harness Model-Based Testing của vòng đời booking (R05 Cal.diy x K02).
+# Đường dẫn khi đưa vào repo: .github/workflows/mbt-booking.yml
+#
+# TRẠNG THÁI: bản nháp, CHƯA được chạy trên GitHub Actions. Sau khi commit, chạy bằng
+# Actions > "MBT booking" > Run workflow, rồi chụp log/summary đưa vào báo cáo (Mục 12.5).
+#
+# Workflow tái sử dụng đúng các script đã có trong repo (prepare-issue-04-env.ps1,
+# start-issue-04-db.ps1, run-issue-04-local.ps1, run-issue-06-mbt.mjs), không thêm
+# dependency và không dùng secret nào.
+name: MBT booking
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "docs/qa/model/**"
+      - "apps/web/playwright/mbt/**"
+      - "scripts/run-issue-06-mbt.mjs"
+      - ".github/workflows/mbt-booking.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mbt-booking-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRAPHWALKER_VERSION: "4.3.3"
+  GRAPHWALKER_JAR: tools/graphwalker/graphwalker-cli-4.3.3.jar
+  MODEL: docs/qa/model/booking-model.json
+  GENERATOR: random(edge_coverage(100))
+  SEED: "6006"
+
+jobs:
+  # Job 1: nhanh, không cần trình duyệt hay database. Đầu ra tối thiểu của CI.
+  model-check:
+    name: Model check và sinh đường đi
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Tải GraphWalker CLI ${{ env.GRAPHWALKER_VERSION }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$GRAPHWALKER_VERSION" \
+            --repo GraphWalker/graphwalker-project \
+            --pattern "graphwalker-cli-${GRAPHWALKER_VERSION}.jar" \
+            --dir tools/graphwalker
+          sha256sum "$GRAPHWALKER_JAR"
+          java -version
+
+      - name: Kiểm tra model
+        run: java -jar "$GRAPHWALKER_JAR" check -m "$MODEL" "$GENERATOR"
+
+      - name: Sinh đường đi (seed ${{ env.SEED }})
+        run: |
+          java -jar "$GRAPHWALKER_JAR" offline --seed "$SEED" -m "$MODEL" "$GENERATOR" | grep '^{' | tee mbt-path.jsonl
+          echo "Số dòng đường đi: $(wc -l < mbt-path.jsonl)"
+
+      # Không dùng "run-issue-06-mbt.mjs --generate-only": runner đó vẫn đòi Docker và
+      # node_modules nên thoát mã 1 (chưa kiểm chứng). Kiểm tra trực tiếp đường đi thay thế.
+      - name: Kiểm tra đường đi phủ đủ 6 cạnh
+        run: |
+          for e in e_CreateBookingA e_RescheduleToB e_CancelBookingB e_RescheduleSlotUnavailable e_SelectAnotherSlot e_StartNewBooking; do
+            if grep -q "\"$e\"" mbt-path.jsonl; then echo "có cạnh $e"; else echo "thiếu cạnh $e" >&2; exit 1; fi
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mbt-model-check
+          path: |
+            mbt-path.jsonl
+            docs/qa/evidence/issue-06-*.json
+          if-no-files-found: warn
+
+  # Job 2: chạy thật GraphWalker + Playwright + oracle đọc database.
+  mbt-e2e:
+    name: Chạy harness (Playwright + PostgreSQL)
+    needs: model-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Bật corepack (Yarn 4.12.0)
+        run: corepack enable
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: yarn
+
+      - name: Tải GraphWalker CLI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "$GRAPHWALKER_VERSION" \
+            --repo GraphWalker/graphwalker-project \
+            --pattern "graphwalker-cli-${GRAPHWALKER_VERSION}.jar" \
+            --dir tools/graphwalker
+          sha256sum "$GRAPHWALKER_JAR"
+
+      - name: Cài dependency
+        run: corepack yarn install --immutable
+
+      - name: Cài Chromium cho Playwright
+        run: corepack yarn playwright install --with-deps chromium
+
+      - name: Tạo .env cục bộ (giá trị ngẫu nhiên, không dùng secret)
+        shell: pwsh
+        run: ./scripts/prepare-issue-04-env.ps1
+
+      - name: Dựng PostgreSQL 17 tại 127.0.0.1:5450
+        shell: pwsh
+        run: |
+          docker pull postgres:17-alpine
+          ./scripts/start-issue-04-db.ps1
+
+      - name: Đợi database sẵn sàng
+        run: |
+          for i in $(seq 1 30); do
+            docker exec caldiy-issue04-db pg_isready && exit 0
+            sleep 2
+          done
+          echo "Database không sẵn sàng" >&2
+          exit 1
+
+      - name: Migrate và generate Prisma
+        shell: pwsh
+        run: |
+          ./scripts/run-issue-04-local.ps1 prisma migrate deploy
+          ./scripts/run-issue-04-local.ps1 prisma generate
+
+      - name: Khởi động web (nền)
+        shell: bash
+        env:
+          NEXT_PUBLIC_IS_E2E: "1"
+        run: |
+          # '-p' phải đặt trong dấu nháy: nếu không PowerShell hiểu là tham số của chính nó
+          # ("parameter name 'p' is ambiguous") và web không khởi động.
+          nohup pwsh -NoProfile -Command "./scripts/run-issue-04-local.ps1 workspace @calcom/web dev '-p' 3000" > "$RUNNER_TEMP/web.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/web.pid"
+          echo "web started"
+
+      - name: Đợi web trả lời
+        run: |
+          for i in $(seq 1 120); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 http://localhost:3000/ || true)
+            echo "lần $i: HTTP $code"
+            kill -0 "$(cat "$RUNNER_TEMP/web.pid")" 2>/dev/null || { echo "Tiến trình web đã thoát" >&2; exit 1; }
+            case "$code" in 200|301|302|307|308) exit 0 ;; esac
+            sleep 5
+          done
+          echo "Web không sẵn sàng sau 10 phút" >&2
+          exit 1
+
+      - name: Chẩn đoán khi web không lên
+        if: failure()
+        shell: bash
+        run: |
+          {
+            echo "--- tiến trình"; pgrep -af "next|yarn|pwsh" | cut -c1-160 | head -8
+            echo "--- cổng"; (ss -ltn | grep -E ':3000|:5450') || echo "không có cổng 3000/5450"
+            echo "--- cuối web.log"; tail -n 35 "$RUNNER_TEMP/web.log" | cut -c1-220
+          } > "$RUNNER_TEMP/diag.txt" 2>&1 || true
+          msg=$(head -c 3500 "$RUNNER_TEMP/diag.txt" | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
+          echo "::error title=Chẩn đoán web::$msg"
+
+      # scripts/run-issue-06-mbt.mjs gọi cứng "powershell.exe" (chỉ có trên Windows). Trên Linux
+      # runner chỉ có pwsh, nên tạo lối tắt để runner chạy được mà không phải sửa mã của repo.
+      - name: Tạo lối tắt powershell.exe trỏ tới pwsh
+        run: |
+          sudo ln -sf "$(command -v pwsh)" /usr/local/bin/powershell.exe
+          command -v powershell.exe
+
+      - name: Chạy harness MBT
+        run: node scripts/run-issue-06-mbt.mjs
+
+      - name: Tóm tắt kết quả
+        if: always()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dir = "docs/qa/evidence";
+            const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => /^issue-06-.*\.json$/.test(f)).sort() : [];
+            const out = process.env.GITHUB_STEP_SUMMARY;
+            if (!files.length) { fs.appendFileSync(out, "Không có file evidence.\n"); process.exit(0); }
+            const d = JSON.parse(fs.readFileSync(`${dir}/${files.at(-1)}`, "utf8"));
+            const cov = d.coverage || {};
+            const line = (k) => cov[k] ? `${cov[k].visited}/${cov[k].total} (${cov[k].percent}%)` : "n/a";
+            fs.appendFileSync(out, [
+              "### Kết quả MBT booking",
+              `- Kết luận: **${d.result}**`,
+              `- Commit: \`${d.gitSHA}\` (dirty=${d.dirty})`,
+              `- Cạnh: ${line("edges")}, đỉnh: ${line("vertices")}`,
+              `- Số bước: ${(d.steps || []).length}`,
+              `- Thời điểm (UTC): ${d.utc}`,
+              ""
+            ].join("\n"));
+          '
+
+      - name: In lý do không đạt (annotation)
+        if: failure()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dir = "docs/qa/evidence";
+            const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => /^issue-06-.*\.json$/.test(f)).sort() : [];
+            if (!files.length) { console.log("::error title=Evidence::không có file evidence"); process.exit(0); }
+            const d = JSON.parse(fs.readFileSync(`${dir}/${files.at(-1)}`, "utf8"));
+            const bad = (d.steps || []).filter(s => s.result !== "pass").slice(0, 4);
+            const lines = [`result=${d.result}`, `errors=${JSON.stringify(d.errors || []).slice(0, 600)}`,
+              `steps=${(d.steps || []).length}`, `cov=${JSON.stringify(d.coverage || {}).slice(0, 200)}`,
+              ...bad.map(s => JSON.stringify(s).slice(0, 500))];
+            console.log("::error title=Evidence::" + lines.join("%0A").replace(/\r/g, ""));
+          '
+
+      # Không đính kèm log của web server: log thô có thể chứa dữ liệu nhạy cảm.
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mbt-evidence
+          path: docs/qa/evidence/issue-06-*.json
+          if-no-files-found: warn
