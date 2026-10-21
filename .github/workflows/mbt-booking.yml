@@ -184,6 +184,13 @@ jobs:
           msg=$(head -c 3500 "$RUNNER_TEMP/diag.txt" | sed ':a;N;$!ba;s/%/%25/g;s/\r//g;s/\n/%0A/g')
           echo "::error title=Chẩn đoán web::$msg"
 
+      # scripts/run-issue-06-mbt.mjs gọi cứng "powershell.exe" (chỉ có trên Windows). Trên Linux
+      # runner chỉ có pwsh, nên tạo lối tắt để runner chạy được mà không phải sửa mã của repo.
+      - name: Tạo lối tắt powershell.exe trỏ tới pwsh
+        run: |
+          sudo ln -sf "$(command -v pwsh)" /usr/local/bin/powershell.exe
+          command -v powershell.exe
+
       - name: Chạy harness MBT
         run: node scripts/run-issue-06-mbt.mjs
 
