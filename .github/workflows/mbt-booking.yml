@@ -210,6 +210,22 @@ jobs:
             ].join("\n"));
           '
 
+      - name: In lý do không đạt (annotation)
+        if: failure()
+        run: |
+          node -e '
+            const fs = require("fs");
+            const dir = "docs/qa/evidence";
+            const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => /^issue-06-.*\.json$/.test(f)).sort() : [];
+            if (!files.length) { console.log("::error title=Evidence::không có file evidence"); process.exit(0); }
+            const d = JSON.parse(fs.readFileSync(`${dir}/${files.at(-1)}`, "utf8"));
+            const bad = (d.steps || []).filter(s => s.result !== "pass").slice(0, 4);
+            const lines = [`result=${d.result}`, `errors=${JSON.stringify(d.errors || []).slice(0, 600)}`,
+              `steps=${(d.steps || []).length}`, `cov=${JSON.stringify(d.coverage || {}).slice(0, 200)}`,
+              ...bad.map(s => JSON.stringify(s).slice(0, 500))];
+            console.log("::error title=Evidence::" + lines.join("%0A").replace(/\r/g, ""));
+          '
+
       # Không đính kèm log của web server: log thô có thể chứa dữ liệu nhạy cảm.
       - uses: actions/upload-artifact@v4
         if: always()
