@@ -65,16 +65,20 @@ const finish = () => {
   );
 };
 if (evidence.errors.length === 0) {
-  const generated = command("java", [
-    "-jar",
-    jar,
-    "offline",
-    "--seed",
-    "6006",
-    "-m",
-    "docs/qa/model/booking-model.json",
-    "random(edge_coverage(100))",
-  ]);
+  const generated = command(
+    "java",
+    [
+      "-jar",
+      jar,
+      "offline",
+      "--seed",
+      "6006",
+      "-m",
+      "docs/qa/model/booking-model.json",
+      "random(edge_coverage(100))",
+    ],
+    120_000
+  );
   if (generated.status !== 0) evidence.errors.push(output(generated));
   else {
     try {

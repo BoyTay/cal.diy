@@ -61,7 +61,7 @@ Trong T05, `fromReschedule` là liên kết logic giữa hai booking, không ph�
 
 ### Ánh xạ sang model GraphWalker
 
-[`docs/qa/model/booking-model-v2.json`](model/booking-model-v2.json) mô hình hóa phạm vi mở rộng của Issue #17. Harness Issue #6 hiện tại dùng [`docs/qa/model/booking-model-v1.json`](model/booking-model-v1.json), vì vậy không được đổi tên edge/vertex của v1 cho đến khi harness tương thích được cập nhật:
+[`docs/qa/model/booking-model-v2.json`](model/booking-model-v2.json) mô hình hóa phạm vi mở rộng của Issue #17. Từ Issue #18 (Task 11), harness `scripts/run-issue-06-mbt.mjs` và [`docs/qa/model/booking-model.json`](model/booking-model.json) đã được cập nhật chính thức lên Model v2 (12 edge, 7 vertex); model v1 được lưu tại [`docs/qa/model/booking-model-v1.json`](model/booking-model-v1.json) để đối chiếu hồi quy:
 
 | Vertex GraphWalker | Trạng thái dữ liệu tương ứng |
 | --- | --- |
