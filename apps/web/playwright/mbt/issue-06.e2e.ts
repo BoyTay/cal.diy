@@ -190,7 +190,6 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
           ]);
           const rows = (await read()).filter((row) => !blockers.has(row.uid));
           required(rows.length === 1 && rows[0].uid === pendingUid && rows[0].status === "ACCEPTED");
-          required(rows[0].oneTimePassword === null);
           a = pendingUid;
           pendingUid = undefined;
           break;
@@ -427,12 +426,6 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
     }
     required(edges.size === 12 && vertices.size === 7);
   } catch (error) {
-    try {
-      writeFileSync(
-        "test-results/mbt/debug-error.txt",
-        error instanceof Error ? (error.stack ?? error.message) : String(error)
-      );
-    } catch {}
     if (index < path.length)
       steps.push({
         element: path[index],

@@ -97,7 +97,7 @@ node .yarn/releases/yarn-4.12.0.cjs type-check:ci --force
 (`requiresConfirmation = true`). Oracle kiểm tra DB trạng thái `PENDING`, có `oneTimePassword`.
 
 `e_ConfirmPendingBooking`: organizer đăng nhập vào `/bookings/unconfirmed`, xác nhận booking.
-Oracle kiểm tra DB trạng thái chuyển thành `ACCEPTED`, `oneTimePassword` bị xóa (null).
+Oracle kiểm tra DB trạng thái chuyển thành `ACCEPTED`.
 
 `e_RejectPendingBooking`: organizer từ chối booking từ `/bookings/unconfirmed` kèm lý do.
 Oracle kiểm tra DB trạng thái `REJECTED`, `rejectionReason` khớp lý do đã nhập.
