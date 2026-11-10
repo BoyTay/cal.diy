@@ -77,6 +77,19 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
     return -1;
   };
   const freshHost = async () => {
+    await page.context().clearCookies();
+    await page.context().addCookies([
+      {
+        domain: "localhost",
+        path: "/",
+        name: "calcom-timezone-dialog",
+        value: "1",
+        expires: -1,
+        httpOnly: false,
+        secure: false,
+        sameSite: "Lax",
+      },
+    ]);
     host = await users.create({
       name: "MBT synthetic host",
       overrideDefaultEventTypes: true,
@@ -414,6 +427,12 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
     }
     required(edges.size === 12 && vertices.size === 7);
   } catch (error) {
+    try {
+      writeFileSync(
+        "test-results/mbt/debug-error.txt",
+        error instanceof Error ? (error.stack ?? error.message) : String(error)
+      );
+    } catch {}
     if (index < path.length)
       steps.push({
         element: path[index],
