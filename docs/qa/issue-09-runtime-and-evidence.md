@@ -1,94 +1,39 @@
-# Runtime, build, seed va evidence booking
+# Môi trường, build/run, seed và evidence booking
 
-Tai lieu nay ghi lai cach chuan bi moi truong, build/run, seed data va cac ket qua
-chay duoc cho luong booking co ban. PR nay duoc tao tu nhanh
-`docs/qa-runtime-evidence` va nham vao `qa/model-based-booking`.
+Tài liệu này ghi lại môi trường, phiên bản, lệnh build/run, seed data và các
+kết quả chạy được cho luồng booking model-based testing (MBT). PR này nằm trên
+nhánh `docs/qa-runtime-evidence` và nhắm vào `qa/model-based-booking`.
 
-## Moc phien ban
+## Mốc phiên bản
 
-- Target branch tai luc viet tai lieu: `qa/model-based-booking`
-- Target SHA: `49008921b2`
-- Evidence MBT da cong bo: `280ae3a6d3a58961f4552025f470ae52c829a96c`
-- Thoi han cong viec: `2026-11-12`
-- Evidence chi ghi SHA/tag va ket qua da loc; khong ghi secret, email, UID
-  booking, token, URL quan ly booking hay link thao tac quan tri.
+- Nhánh đích: `qa/model-based-booking`
+- Target SHA tại thời điểm cập nhật: `49008921b2`
+- Evidence mới nhất: `issue-06-2026-11-10T05-41-58-918Z.json`
+- SHA được kiểm thử trong evidence: `9acfc728feacac8434edd69665e142c8932a0169`
+- Hạn issue #19: `2026-11-12`
+- Evidence đã lọc không ghi secret, email, UID/token booking hoặc URL quản lý
+  booking.
 
-> Evidence duoc tao truoc target SHA hien tai. Khi chay lai tren commit khac,
-> phai ghi SHA moi trong file evidence thay vi coi ket qua cu la ket qua cua
-> commit moi.
+Evidence phải được đối chiếu với SHA mà nó ghi. Không dùng kết quả của SHA cũ
+để khẳng định cho một commit mới nếu chưa chạy lại.
 
-## Moi truong
+## Môi trường
 
-### Chay local va seed co ban
+### Đường chạy đã kiểm chứng: MBT harness
 
-Can co Windows, PowerShell 7, Git, Node theo version trong repo, Corepack/Yarn,
-PostgreSQL va Chromium Playwright. Moi truong MBT da duoc ghi nhan:
+PowerShell 7 là bắt buộc cho các script chuẩn bị harness. Môi trường được ghi
+nhận trong evidence mới nhất:
 
-| Thanh phan | Phien ban trong evidence |
+| Thành phần | Phiên bản trong evidence |
 | --- | --- |
 | OS | Windows (`win32`) |
 | Node.js | `20.20.2` |
-| Yarn | `4.12.0` |
 | Java | Temurin/OpenJDK `21.0.13` |
-| Docker | `29.4.1` |
+| Docker | `29.8.0` |
 | PostgreSQL | `17.11` |
 | GraphWalker | `4.3.3` |
 
-Lenh chuan bi local:
-
-```powershell
-corepack enable
-corepack yarn install --immutable
-corepack yarn playwright install chromium
-Copy-Item .env.example .env
-# Dien secret local vao .env; khong commit .env.
-corepack yarn prisma generate
-corepack yarn db-seed
-```
-
-`db-seed` dung du lieu mau cho local development. Khong dung tai khoan, database
-hoac credential production. Neu `.env` da ton tai, kiem tra lai `DATABASE_URL`
-truoc khi seed de tranh ghi nham database.
-
-### Build va run
-
-Chay web development:
-
-```powershell
-corepack yarn dev
-```
-
-Build web production:
-
-```powershell
-corepack yarn build
-corepack yarn start
-```
-
-Chay stack Compose, gom PostgreSQL, Redis, web, API v2 va Prisma Studio:
-
-```powershell
-docker compose up -d --build
-docker compose ps
-```
-
-Compose hien tai expose web o `http://localhost:3001`, API theo `API_PORT` va
-Studio o `http://localhost:5555`. Harness MBT khong dung Compose; harness dung
-dev server o port `3000` va PostgreSQL test rieng o port `5450`.
-
-Dung stack ma khong xoa volume:
-
-```powershell
-docker compose down
-```
-
-Khong dung `docker compose down -v` khi can giu du lieu test. Khong dua ket qua
-`docker compose config`, `.env` hoac log co the chua secret vao PR.
-
-## Chay MBT va tao evidence
-
-Harness su dung PowerShell 7, Node 20, JDK 21 va GraphWalker 4.3.3. Chuan bi
-database va schema test:
+Các lệnh chuẩn bị đã được tài liệu hóa cho harness:
 
 ```powershell
 pwsh -File scripts/prepare-issue-04-env.ps1
@@ -98,47 +43,87 @@ pwsh -File scripts/run-issue-04-local.ps1 prisma migrate deploy
 pwsh -File scripts/run-issue-04-local.ps1 prisma generate
 ```
 
-Terminal web rieng:
+Terminal web riêng:
 
 ```powershell
 $env:NEXT_PUBLIC_IS_E2E = "1"
 pwsh -File scripts/run-issue-04-local.ps1 workspace @calcom/web dev --port 3000
 ```
 
-Kiem tra model va chay harness:
+Kiểm tra model và chạy harness:
 
 ```powershell
 java -jar tools/graphwalker/graphwalker-cli-4.3.3.jar check -m docs/qa/model/booking-model.json "random(edge_coverage(100))"
 node scripts/run-issue-06-mbt.mjs
 ```
 
-Moi lan chay pass tao mot file `docs/qa/evidence/issue-06-<UTC>.json` co SHA,
-thoi gian, moi truong, tung buoc, coverage va gioi han. Generate-only khong
-duoc tinh la evidence booking pass.
+Harness không dùng app Compose. Harness dùng dev server ở port `3000` và
+PostgreSQL test riêng ở port `5450`. Mỗi lần chạy pass tạo một file
+`docs/qa/evidence/issue-06-<UTC>.json` có SHA, thời gian, môi trường, từng bước,
+coverage và giới hạn. `generate-only` không được tính là evidence booking pass.
 
-## Evidence it nhat ba luong
+### Các đường local chưa kiểm chứng trong PR này
 
-File [issue-06-2026-11-02T15-07-24-820Z.json](evidence/issue-06-2026-11-02T15-07-24-820Z.json)
-ghi `result: pass`, `dirty: true`, edge coverage `6/6` va vertex coverage `5/5`
-tren SHA `280ae3a6d3a58961f4552025f470ae52c829a96c`. File nay khong chua email,
-UID booking, token hay URL quan ly.
+Các lệnh dưới đây là tham khảo từ README, chưa có evidence chạy thành công trên
+checkout/commit này:
 
-| Luong | Buoc da quan sat | Ket qua |
+```powershell
+corepack enable
+corepack yarn install --immutable
+corepack yarn playwright install chromium
+corepack yarn prisma generate
+corepack yarn db-seed
+corepack yarn dev
+corepack yarn build
+corepack yarn start
+```
+
+Không dùng `Copy-Item .env.example .env` như một quy trình đã kiểm chứng. Tài
+liệu Issue 01 ghi rõ `.env.example` chưa đủ biến cho Compose và bộ `.env` tối
+thiểu cho cài đặt sạch chưa được kiểm chứng. Nếu cần chạy local, phải tạo
+`.env` riêng, điền secret local không in ra terminal và xác nhận từng biến kết
+nối trước khi seed; không commit `.env`.
+
+Compose cũng chưa được dùng làm bằng chứng chạy trong PR này. Theo
+`docker-compose.yml` của target, web expose ở `http://localhost:3000`, Studio ở
+`http://localhost:5555`, còn API dùng `API_PORT`:
+
+```powershell
+docker compose up -d --build  # Chưa kiểm chứng trên checkout này
+docker compose ps              # Chưa kiểm chứng trên checkout này
+```
+
+Không đưa `.env`, `docker compose config` hoặc log có thể chứa secret vào PR.
+Không dùng `docker compose down -v` khi cần giữ volume test.
+
+## Evidence 12 edge, 7 vertex
+
+File [issue-06-2026-11-10T05-41-58-918Z.json](evidence/issue-06-2026-11-10T05-41-58-918Z.json)
+ghi `result: pass`, `dirty: false`, edge coverage `12/12` và vertex coverage
+`7/7`. Evidence chạy trên SHA
+`9acfc728feacac8434edd69665e142c8932a0169` với GraphWalker `4.3.3`.
+
+| Luồng | Edge tiêu biểu | Kết quả quan sát |
 | --- | --- | --- |
-| Dat booking A | `e_CreateBookingA` | A duoc tao tu trang thai khong co booking |
-| Doi lich A -> B | `e_RescheduleToB` | A van duoc giu dung khi nhay loi slot; sau do B duoc tao va lien ket voi A |
-| Huy booking B | `e_CancelBookingB` | B chuyen sang `CANCELLED` |
-| Bat dau phien moi | `e_StartNewBooking` | Phien moi tro ve trang thai khong co booking |
+| Pending → reject | `e_CreatePendingBooking`, `e_RejectPendingBooking` | Booking chuyển qua `PENDING` rồi `REJECTED`; phiên mới trở về `v_NoBooking`. |
+| Pending → cancel | `e_CreatePendingBooking`, `e_CancelPendingBooking` | Booking chuyển từ `PENDING` sang `CANCELLED`; phiên mới không còn booking. |
+| Slot đổi lịch không khả dụng | `e_RescheduleSlotUnavailable` | HTTP `409`; booking gốc không đổi và không tạo booking thay thế. |
+| Đặt, đổi lịch và hủy | `e_CreateAcceptedBooking`, `e_RescheduleToNewSlot`, `e_CancelRescheduledBooking` | Tạo A, đổi sang B, sau đó hủy booking đã đổi lịch. |
+| Pending → confirm | `e_CreatePendingBooking`, `e_ConfirmPendingBooking` | Booking chuyển từ `PENDING` sang trạng thái đã xác nhận `v_BookedA`. |
 
-Evidence cung bao phu nhanh loi slot khong kha dung: HTTP `409`, booking goc
-khong doi va khong tao booking thay the. Cac gioi han da ghi trong evidence:
-khong bao phu PENDING/REJECTED/AWAITING_HOST, seats, payment, recurring,
-external calendar, email va webhook.
+Evidence mới đã bao phủ các nhánh `PENDING`, `REJECTED`, `CANCELLED` và luồng
+xác nhận. Các giới hạn còn lại là `AWAITING_HOST`, seats, payment, recurring,
+external calendar, email, webhook và các guard bổ sung ngoài model hiện tại.
 
-## Kiem tra truoc khi gui PR
+## Kiểm tra trước khi merge
 
-- [ ] Xac nhan `git rev-parse HEAD` va ghi SHA vao evidence moi.
-- [ ] Kiem tra `git status --short` va khong commit `.env`, log, secret hoac JAR.
-- [ ] Kiem tra evidence khong co email, UID/token booking hoac URL quan ly.
-- [ ] Chay formatter/linter va type-check theo thay doi tai lieu.
-- [ ] Mo draft PR vao `qa/model-based-booking` va yeu cau it nhat mot reviewer.
+- [x] Xác nhận target SHA và SHA chạy evidence trong tài liệu.
+- [x] Kiểm tra `git status --short`; working tree sạch sau commit.
+- [x] Quét evidence để bảo đảm không có secret, email, UID/token hoặc URL quản
+      lý booking.
+- [x] Chạy `git diff --check`; Biome không xử lý Markdown theo cấu hình repo.
+- [x] Chạy `corepack yarn type-check:ci --force`; lệnh bị chặn bởi lỗi môi
+      trường hiện hữu `spawn tsc ENOENT` tại `@calcom/app-store`, không có thay
+      đổi mã nguồn từ lần chạy này.
+- [ ] Đổi draft PR sang trạng thái sẵn sàng review sau khi push bản cập nhật;
+      base vẫn là `qa/model-based-booking` và reviewer đã được yêu cầu.
