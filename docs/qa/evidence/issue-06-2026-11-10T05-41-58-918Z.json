@@ -1,0 +1,253 @@
+{
+  "gitSHA": "9acfc728feacac8434edd69665e142c8932a0169",
+  "dirty": false,
+  "utc": "2026-11-10T05:41:58.918Z",
+  "local": "2026-11-10 12:41:58 GMT+7",
+  "timeZone": "Asia/Saigon",
+  "environment": {
+    "platform": "win32",
+    "node": "v20.20.2",
+    "java": "openjdk version \"21.0.13\" 2026-10-20 LTS\r\nOpenJDK Runtime Environment Temurin-21.0.13+9 (build 21.0.13+9-LTS)\r\nOpenJDK 64-Bit Server VM Temurin-21.0.13+9 (build 21.0.13+9-LTS, mixed mode, sharing)",
+    "docker": "Docker version 29.8.0, build 88096ef",
+    "dockerEngine": "29.8.0",
+    "graphWalker": "4.3.3 jar; offline generation succeeded",
+    "postgres": "postgres (PostgreSQL) 17.11"
+  },
+  "result": "pass",
+  "errors": [],
+  "steps": [
+    {
+      "element": "v_NoBooking",
+      "result": "pass"
+    },
+    {
+      "element": "e_CreatePendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Pending",
+      "result": "pass"
+    },
+    {
+      "element": "e_RejectPendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Rejected",
+      "result": "pass"
+    },
+    {
+      "element": "e_StartNewBookingAfterReject",
+      "result": "pass"
+    },
+    {
+      "element": "v_NoBooking",
+      "result": "pass"
+    },
+    {
+      "element": "e_CreatePendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Pending",
+      "result": "pass"
+    },
+    {
+      "element": "e_RejectPendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Rejected",
+      "result": "pass"
+    },
+    {
+      "element": "e_StartNewBookingAfterReject",
+      "result": "pass"
+    },
+    {
+      "element": "v_NoBooking",
+      "result": "pass"
+    },
+    {
+      "element": "e_CreatePendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Pending",
+      "result": "pass"
+    },
+    {
+      "element": "e_CancelPendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Cancelled",
+      "result": "pass"
+    },
+    {
+      "element": "e_StartNewBookingAfterCancel",
+      "result": "pass"
+    },
+    {
+      "element": "v_NoBooking",
+      "result": "pass"
+    },
+    {
+      "element": "e_CreateAcceptedBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_BookedA",
+      "result": "pass"
+    },
+    {
+      "element": "e_RescheduleSlotUnavailable",
+      "result": "pass"
+    },
+    {
+      "element": "v_SlotUnavailable",
+      "result": "pass"
+    },
+    {
+      "element": "e_SelectAnotherSlot",
+      "result": "pass"
+    },
+    {
+      "element": "v_BookedA",
+      "result": "pass"
+    },
+    {
+      "element": "e_CancelAcceptedBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Cancelled",
+      "result": "pass"
+    },
+    {
+      "element": "e_StartNewBookingAfterCancel",
+      "result": "pass"
+    },
+    {
+      "element": "v_NoBooking",
+      "result": "pass"
+    },
+    {
+      "element": "e_CreateAcceptedBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_BookedA",
+      "result": "pass"
+    },
+    {
+      "element": "e_RescheduleToNewSlot",
+      "result": "pass"
+    },
+    {
+      "element": "v_BookedB",
+      "result": "pass"
+    },
+    {
+      "element": "e_CancelRescheduledBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Cancelled",
+      "result": "pass"
+    },
+    {
+      "element": "e_StartNewBookingAfterCancel",
+      "result": "pass"
+    },
+    {
+      "element": "v_NoBooking",
+      "result": "pass"
+    },
+    {
+      "element": "e_CreatePendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_Pending",
+      "result": "pass"
+    },
+    {
+      "element": "e_ConfirmPendingBooking",
+      "result": "pass"
+    },
+    {
+      "element": "v_BookedA",
+      "result": "pass"
+    }
+  ],
+  "coverage": {
+    "edges": {
+      "visited": 12,
+      "total": 12,
+      "percent": 100
+    },
+    "vertices": {
+      "visited": 7,
+      "total": 7,
+      "percent": 100
+    }
+  },
+  "limits": [
+    "Personal non-recurring, no seats/payment/external calendar",
+    "AWAITING_HOST and supplementary guards not covered",
+    "No raw browser errors, trace, screenshot, video or booking identifiers in evidence"
+  ],
+  "path": [
+    "v_NoBooking",
+    "e_CreatePendingBooking",
+    "v_Pending",
+    "e_RejectPendingBooking",
+    "v_Rejected",
+    "e_StartNewBookingAfterReject",
+    "v_NoBooking",
+    "e_CreatePendingBooking",
+    "v_Pending",
+    "e_RejectPendingBooking",
+    "v_Rejected",
+    "e_StartNewBookingAfterReject",
+    "v_NoBooking",
+    "e_CreatePendingBooking",
+    "v_Pending",
+    "e_CancelPendingBooking",
+    "v_Cancelled",
+    "e_StartNewBookingAfterCancel",
+    "v_NoBooking",
+    "e_CreateAcceptedBooking",
+    "v_BookedA",
+    "e_RescheduleSlotUnavailable",
+    "v_SlotUnavailable",
+    "e_SelectAnotherSlot",
+    "v_BookedA",
+    "e_CancelAcceptedBooking",
+    "v_Cancelled",
+    "e_StartNewBookingAfterCancel",
+    "v_NoBooking",
+    "e_CreateAcceptedBooking",
+    "v_BookedA",
+    "e_RescheduleToNewSlot",
+    "v_BookedB",
+    "e_CancelRescheduledBooking",
+    "v_Cancelled",
+    "e_StartNewBookingAfterCancel",
+    "v_NoBooking",
+    "e_CreatePendingBooking",
+    "v_Pending",
+    "e_ConfirmPendingBooking",
+    "v_BookedA"
+  ],
+  "slotUnavailable": {
+    "httpStatus": 409,
+    "requestSlotBlocked": true,
+    "urlDateMatchesRequestStart": false,
+    "startUTC": "2026-12-02T09:00:00.000Z",
+    "endUTC": "2026-12-02T09:30:00.000Z",
+    "originalUnchanged": true,
+    "replacementCount": 0
+  }
+}
