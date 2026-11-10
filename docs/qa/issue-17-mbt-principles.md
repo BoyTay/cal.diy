@@ -1,6 +1,6 @@
 # Phần D - Nguyên lý MBT, phạm vi, rủi ro và tiêu chí pass/fail
 
-Tài liệu này là Phần D của bộ tài liệu kiểm thử booking. Nội dung khớp với model v2 tại [`docs/qa/model/booking-model-v2.json`](model/booking-model-v2.json), state model tại [`issue-05-booking-state-model.md`](issue-05-booking-state-model.md) và kiến trúc kiểm thử tại [`issue-08-system-goals-architecture.md`](issue-08-system-goals-architecture.md). Harness Issue #6 hiện tại tiếp tục dùng model v1 tại [`docs/qa/model/booking-model-v1.json`](model/booking-model-v1.json); `docs/qa/model/booking-model.json` giữ cùng nội dung v1 để runner cũ không bị vỡ.
+Tài liệu này là Phần D của bộ tài liệu kiểm thử booking. Nội dung khớp với model v2 tại [`docs/qa/model/booking-model-v2.json`](model/booking-model-v2.json), state model tại [`issue-05-booking-state-model.md`](issue-05-booking-state-model.md) và kiến trúc kiểm thử tại [`issue-08-system-goals-architecture.md`](issue-08-system-goals-architecture.md). Từ Issue #18 (Task 11), harness và [`docs/qa/model/booking-model.json`](model/booking-model.json) đã được cập nhật đồng bộ lên Model v2 (12 edge, 7 vertex); model v1 được lưu tại [`docs/qa/model/booking-model-v1.json`](model/booking-model-v1.json) để đối chiếu hồi quy.
 
 ## 1. Nguyên lý kiểm thử dựa trên mô hình
 
