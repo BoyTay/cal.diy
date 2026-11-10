@@ -199,7 +199,11 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
           ]);
           const rows = (await read()).filter((row) => !blockers.has(row.uid));
           const rejected = rows.find((row) => row.uid === pendingUid);
-          required(Boolean(rejected && rejected.status === "REJECTED" && rejected.rejectionReason === rejectionReason));
+          required(
+            Boolean(
+              rejected && rejected.status === "REJECTED" && rejected.rejectionReason === rejectionReason
+            )
+          );
           lastRejectedUid = pendingUid;
           pendingUid = undefined;
           break;
@@ -365,27 +369,39 @@ test("Issue 06: execute GraphWalker booking path", async ({ page, users, booking
         }
         case "v_Cancelled": {
           const current = (await read()).find((booking) => booking.uid === lastCancelledUid);
-          required(Boolean(current && current.status === "CANCELLED" && current.cancellationReason === cancellationReason));
+          required(
+            Boolean(
+              current && current.status === "CANCELLED" && current.cancellationReason === cancellationReason
+            )
+          );
           break;
         }
         case "v_Rejected": {
           const current = (await read()).find((booking) => booking.uid === lastRejectedUid);
-          required(Boolean(current && current.status === "REJECTED" && current.rejectionReason === rejectionReason));
+          required(
+            Boolean(current && current.status === "REJECTED" && current.rejectionReason === rejectionReason)
+          );
           break;
         }
         case "e_StartNewBookingAfterCancel": {
-          const oldEventType = regularEventTypeId;
+          const oldEventTypes = [regularEventTypeId, optinEventTypeId];
           const before = await read();
           await freshHost();
-          const after = await prisma.booking.findMany({ where: { eventTypeId: oldEventType }, select });
+          const after = await prisma.booking.findMany({
+            where: { eventTypeId: { in: oldEventTypes } },
+            select,
+          });
           required(JSON.stringify(before) === JSON.stringify(after));
           break;
         }
         case "e_StartNewBookingAfterReject": {
-          const oldEventType = optinEventTypeId;
+          const oldEventTypes = [regularEventTypeId, optinEventTypeId];
           const before = await read();
           await freshHost();
-          const after = await prisma.booking.findMany({ where: { eventTypeId: oldEventType }, select });
+          const after = await prisma.booking.findMany({
+            where: { eventTypeId: { in: oldEventTypes } },
+            select,
+          });
           required(JSON.stringify(before) === JSON.stringify(after));
           break;
         }
