@@ -125,5 +125,5 @@ external calendar, email, webhook và các guard bổ sung ngoài model hiện t
 - [x] Chạy `corepack yarn type-check:ci --force`; lệnh bị chặn bởi lỗi môi
       trường hiện hữu `spawn tsc ENOENT` tại `@calcom/app-store`, không có thay
       đổi mã nguồn từ lần chạy này.
-- [ ] Đổi draft PR sang trạng thái sẵn sàng review sau khi push bản cập nhật;
+- [x] Đổi draft PR sang trạng thái sẵn sàng review sau khi push bản cập nhật;
       base vẫn là `qa/model-based-booking` và reviewer đã được yêu cầu.
