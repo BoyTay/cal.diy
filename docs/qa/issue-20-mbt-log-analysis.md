@@ -1,4 +1,4 @@
-# Issue #19: Tổng hợp log và phân tích bất thường của Issue #18
+# Issue #20: Tổng hợp log và phân tích bất thường của Issue #18
 
 Tài liệu này tổng hợp các lần chạy của harness GraphWalker/Playwright từ Issue
 #18, phân loại lỗi hoặc hành vi bất thường, cung cấp reproducer an toàn và truy
@@ -12,7 +12,7 @@ flaky của harness cũ hoặc hành vi từ chối đúng của ứng dụng.
 - Target SHA khảo sát: `a16edc21e66093b5b1ee1ebf25ba77ab746cf0c8`
 - Evidence runtime đầy đủ: SHA `9acfc728feacac8434edd69665e142c8932a0169`
 - Evidence đầy đủ: [issue-06-2026-11-10T05-41-58-918Z.json](evidence/issue-06-2026-11-10T05-41-58-918Z.json)
-- Hạn issue #19: `2026-11-18`
+- Hạn issue #20: `2026-11-18`
 - Phạm vi: booking cá nhân, không recurring, không seats/payment/calendar ngoài.
 
 Evidence chỉ giữ các trường oracle được whitelist: trạng thái, liên kết
@@ -49,7 +49,7 @@ ngày 10/11 đạt toàn bộ tiêu chí runtime của model v2.
 node scripts/run-issue-06-mbt.mjs
 ```
 
-**Nguyên nhân mã nguồn:** `scripts/run-issue-06-mbt.mjs:23-24` gọi `java` và
+**Nguyên nhân mã nguồn:** `scripts/run-issue-06-mbt.mjs:17-20` gọi `java` và
 `docker` trong preflight; `scripts/run-issue-06-mbt.mjs:55-57` kiểm tra JAR;
 `scripts/run-issue-06-mbt.mjs:68-82` dừng việc sinh/chạy path khi GraphWalker
 không chạy được. Đây là cơ chế bảo vệ đúng: runner không tăng coverage khi
@@ -87,8 +87,8 @@ ngày 01/11 cùng SHA pass với `dirty=false`.
 
 **Nguyên nhân:** Cài đặt sinh lại file `*.generated.ts` và `schema.prisma`,
 đồng thời khác ký tự newline. Đối chiếu `git diff --ignore-cr-at-eol` rỗng.
-Runner lấy cờ từ `git status --porcelain` trong
-`scripts/run-issue-06-mbt.mjs:29-31`; cờ này giúp truy vết reproducibility,
+Runner lấy SHA và cờ dirty từ `git rev-parse HEAD` và `git status --porcelain`
+trong `scripts/run-issue-06-mbt.mjs:23-24`; cờ này giúp truy vết reproducibility,
 không làm oracle booking pass giả.
 
 ### 4. PowerShell 5.1 không tương thích script chuẩn bị — lỗi toolchain
@@ -152,4 +152,4 @@ git status --short
 
 PR phải được tạo từ nhánh riêng vào `qa/model-based-booking`, yêu cầu ít nhất một
 reviewer, và chỉ commit tài liệu/evidence đã lọc. Không commit `.env`, JAR,
-secret, email, UID/token hoặc URL quản lý booking.
+secret, email, UID/token hoặc URL quản lý booking. Refs #20.
