@@ -26,7 +26,7 @@ const postgres = command("docker", ["exec", "caldiy-issue04-db", "postgres", "--
 const jar = resolve("tools/graphwalker/graphwalker-cli-4.3.3.jar");
 const evidence = {
   gitSHA: output(git(["rev-parse", "HEAD"])),
-  dirty: output(git(["status", "--porcelain", "--", ":(exclude)docs/qa/evidence"])).trim() !== "",
+  dirty: output(git(["status", "--porcelain"])) !== "",
   seed: String(seed),
   utc: now.toISOString(),
   local: new Intl.DateTimeFormat("sv-SE", {

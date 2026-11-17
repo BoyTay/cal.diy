@@ -41,27 +41,23 @@ for (const seed of seeds) {
     }
   }
 
-  const pathLength = evidenceData?.path?.length ?? evidenceData?.steps?.length ?? 0;
-  const visitedEdges =
-    evidenceData?.coverage?.edges?.visited ??
-    new Set(evidenceData?.path?.filter((s) => s.startsWith("e_")) ?? []).size;
-  const visitedVertices =
-    evidenceData?.coverage?.vertices?.visited ??
-    new Set(evidenceData?.path?.filter((s) => s.startsWith("v_")) ?? []).size;
+  const pathLength = evidenceData?.path?.length ?? 0;
+  const uniqueEdges = new Set(evidenceData?.path?.filter((s) => s.startsWith("e_")) ?? []).size;
+  const uniqueVertices = new Set(evidenceData?.path?.filter((s) => s.startsWith("v_")) ?? []).size;
   const result = evidenceData?.result ?? (run.status === 0 ? "completed" : "failed");
 
   results.push({
     seed: String(seed),
     steps: pathLength,
-    edges: `${visitedEdges}/12`,
-    vertices: `${visitedVertices}/7`,
+    edges: `${uniqueEdges}/12`,
+    vertices: `${uniqueVertices}/7`,
     result,
     durationMs: elapsed,
     exitCode: run.status,
   });
 
   console.log(
-    `[Seed ${seed}] Steps: ${pathLength} | Edges: ${visitedEdges}/12 | Vertices: ${visitedVertices}/7 | Result: ${result} (${elapsed}ms)`
+    `[Seed ${seed}] Steps: ${pathLength} | Edges: ${uniqueEdges}/12 | Vertices: ${uniqueVertices}/7 | Result: ${result} (${elapsed}ms)`
   );
   if (run.status !== 0 && stderr) {
     console.error(`  Error: ${stderr}`);
