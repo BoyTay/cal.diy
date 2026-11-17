@@ -1,113 +1,114 @@
 # Issue #21: Đánh giá độ ổn định của MBT Harness qua nhiều seed
 
-Tài liệu này tổng hợp kết quả thực nghiệm kiểm thử Model-Based Testing (MBT) trên mô hình Booking Model v2 với nhiều giá trị `seed` ngẫu nhiên khác nhau, ghi nhận số lần chạy, tỉ lệ pass/fail, xác định các mẫu hành vi flaky và phân tích nguyên nhân gốc rễ liên quan đến đặc tính sinh đường đi của GraphWalker và tương tác Playwright/DB.
+Tài liệu này tổng hợp kết quả kiểm thử thực tế (runtime execution) và phân tích độ ổn định của Model-Based Testing (MBT) trên mô hình Booking Model v2 qua nhiều giá trị `seed` ngẫu nhiên khác nhau, ghi nhận số lần chạy, phân định rõ tỉ lệ sinh đường đi mô hình (static gate) và tỉ lệ pass thực tế qua browser/DB (runtime gate), kèm theo dữ liệu đo lường và phân tích nguy cơ flaky.
 
 ## 1. Mốc và phạm vi
 
-- **Nhánh gốc**: `qa/model-based-booking`
+- **Nhánh đích**: `qa/model-based-booking`
 - **Nhánh thực hiện**: `qa/issue-21-multi-seed-stability`
-- **Target commit SHA**: `8b06b465838a25dbb3a3171f90ec198b61e721fc`
+- **Target commit SHA gốc**: `8b06b465838a25dbb3a3171f90ec198b61e721fc`
 - **Mô hình kiểm thử**: `docs/qa/model/booking-model.json` (Model v2: 12 edge, 7 vertex)
-- **Hạn Issue #21**: `2026-11-17`
-- **Tiêu chuẩn an toàn**: Tuân thủ nghiêm ngặt whitelist của oracle Issue #17/#18; tuyệt đối không commit secret, email thật, booking UID, token hay URL quản lý booking.
+- **Hạn chót**: `2026-11-17`
+- **Tiêu chuẩn an toàn**: Tuân thủ nghiêm ngặt whitelist của oracle Issue #17/#18; toàn bộ evidence đã được khử khuẩn (sanitized), tuyệt đối không commit secret, email thật, booking UID, token hay URL quản lý booking.
 
-## 2. Môi trường thực thi
+## 2. Môi trường thực thi thực tế
 
-Hệ thống được cấu hình đồng nhất theo tài liệu chuẩn của repo:
+Môi trường kiểm thử được chuẩn bị chính xác theo tài liệu chuẩn của repo (`apps/web/playwright/mbt/README.md`):
 - **Hệ điều hành**: Windows (`win32`)
-- **Node.js**: `v24.21.0` (Node runtime của môi trường máy chủ)
+- **Node.js**: `v20.20.2` (sử dụng runtime từ `tools/issue06-env/node-v20.20.2-win-x64`)
 - **Java JDK**: `OpenJDK 21.0.10` (Temurin/Android Studio JBR 21 LTS; đáp ứng tiêu chuẩn Java 11..21)
 - **GraphWalker CLI**: `4.3.3` (`tools/graphwalker/graphwalker-cli-4.3.3.jar`)
 - **Database**: PostgreSQL 17.11 (Docker container `caldiy-issue04-db`, cổng `5450`)
+- **Web Application**: Next.js 16.2.3 dev server trên cổng `3000` (`$env:NEXT_PUBLIC_IS_E2E = "1"`)
 - **Trình duyệt**: Playwright Chromium (headless)
 - **Generator**: `random(edge_coverage(100))`
 
-## 3. Tổng hợp kết quả thực nghiệm đa seed
+---
 
-### 3.1 Tập seed đại diện (10 seeds)
+## 3. Tổng hợp kết quả thực nghiệm
 
-Tập 10 seed được chọn với dải giá trị đa dạng từ nhỏ đến lớn nhằm khảo sát tính ngẫu nhiên của bộ sinh:
+### 3.1 Bảng kết quả thực nghiệm Runtime (Chạy thật qua UI & Oracle DB)
 
-| Seed | Số bước (Path Length) | Số Cạnh (Edges) | Số Đỉnh (Vertices) | Kết quả Offline/Model | Thời gian sinh | File Evidence |
-| :---: | :---: | :---: | :---: | :---: | :---: | :--- |
-| **1001** | 65 | 32 (12/12) | 33 (7/7) | Đạt 100% coverage | ~1.2s | `docs/qa/evidence/issue-06-2026-11-16T07-11-06-643Z.json` |
-| **2024** | 127 | 63 (12/12) | 64 (7/7) | Đạt 100% coverage | ~1.1s | `docs/qa/evidence/issue-06-2026-11-16T07-11-08-380Z.json` |
-| **3030** | 31 | 15 (12/12) | 16 (7/7) | Đạt 100% coverage | ~1.0s | `docs/qa/evidence/issue-06-2026-11-16T07-11-10-153Z.json` |
-| **4242** | 93 | 46 (12/12) | 47 (7/7) | Đạt 100% coverage | ~1.1s | `docs/qa/evidence/issue-06-2026-11-16T07-11-11-786Z.json` |
-| **5555** | 61 | 30 (12/12) | 31 (7/7) | Đạt 100% coverage | ~1.0s | `docs/qa/evidence/issue-06-2026-11-16T07-11-13-406Z.json` |
-| **6006** | 41 | 20 (12/12) | 21 (7/7) | Đạt 100% coverage | ~1.0s | `docs/qa/evidence/issue-06-2026-11-16T07-11-15-114Z.json` |
-| **7777** | 115 | 57 (12/12) | 58 (7/7) | Đạt 100% coverage | ~1.1s | `docs/qa/evidence/issue-06-2026-11-16T07-11-16-770Z.json` |
-| **8888** | 173 | 86 (12/12) | 87 (7/7) | Đạt 100% coverage | ~1.0s | `docs/qa/evidence/issue-06-2026-11-16T07-11-18-510Z.json` |
-| **9999** | 59 | 29 (12/12) | 30 (7/7) | Đạt 100% coverage | ~1.1s | `docs/qa/evidence/issue-06-2026-11-16T07-11-20-401Z.json` |
-| **12345** | 231 | 115 (12/12) | 116 (7/7) | Đạt 100% coverage | ~1.0s | `docs/qa/evidence/issue-06-2026-11-16T07-11-22-042Z.json` |
+Theo quy định tại `docs/qa/issue-17-mbt-principles.md`, kết quả chỉ được công nhận là `PASS` khi toàn bộ chuỗi hành động được thực thi qua giao diện người dùng Playwright và được xác minh tức thì bằng oracle truy vấn DB PostgreSQL cục bộ.
 
-*Ghi chú*: Seed `6006` là seed chuẩn baseline đã được xác minh runtime đầy đủ tại Issue #18 (commit `9acfc728fe`, evidence `issue-06-2026-11-10T05-41-58-918Z.json`). Cấu trúc đường đi của seed `6006` sinh ra qua các lần chạy là hoàn toàn trùng khớp (deterministic).
+Dưới đây là kết quả thực tế của 4 seed ngắn và vừa được thực thi toàn diện:
 
-### 3.2 Khảo sát phân phối thống kê (Mở rộng 30 seeds ngẫu nhiên)
+| Seed | Số bước | Cạnh (Pass/Tổng) | Đỉnh (Pass/Tổng) | Thời gian chạy | Kết quả Runtime | Trạng thái Dirty | Node Version | File Evidence (Runtime Pass) |
+| :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
+| **3030** | 31 | 12/12 (100%) | 7/7 (100%) | **95s** (~1.5m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-20-53-311Z.json`](evidence/issue-06-2026-11-17T12-20-53-311Z.json) |
+| **6006** | 41 | 12/12 (100%) | 7/7 (100%) | **91s** (~1.5m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-27-46-659Z.json`](evidence/issue-06-2026-11-17T12-27-46-659Z.json) |
+| **9999** | 59 | 12/12 (100%) | 7/7 (100%) | **176s** (~2.9m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-39-00-071Z.json`](evidence/issue-06-2026-11-17T12-39-00-071Z.json) |
+| **5555** | 61 | 12/12 (100%) | 7/7 (100%) | **234s** (~3.9m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-42-36-101Z.json`](evidence/issue-06-2026-11-17T12-42-36-101Z.json) |
 
-Khảo sát trên tập 30 seed ngẫu nhiên trong dải `[1, 100000]`:
-- **Tổng số lần chạy**: 30
-- **Số lần hoàn thành hợp lệ (Pass static/model gate)**: 30 / 30 (**100%**)
-- **Số bước trung bình (Average steps)**: **106.67 bước** (tương đương ~53 cạnh)
-- **Số bước ngắn nhất (Min steps)**: **41 bước** (Seed `26260`, 20 cạnh)
-- **Số bước dài nhất (Max steps)**: **311 bước** (Seed `81618`, 155 cạnh)
-- Không có seed nào gặp lỗi treo sinh đường đi, không seed nào vi phạm điều kiện trần 1000 bước hoặc thiếu coverage 12/12 edges, 7/7 vertices.
+- **Tỉ lệ Pass chạy thật (Runtime Pass Rate)**: **4/4 runs (100%)**.
+- **Số lỗi flaky / sai lệch oracle ghi nhận**: **0 lỗi**.
+- **Tính lặp lại (Reproducibility)**: Seed `6006` sinh đường đi 41 bước hoàn toàn trùng khớp với lần chạy baseline ngày 10/11/2026 và chạy pass 100% với `dirty=false`.
 
-## 4. Phân tích lỗi Flaky và nguyên nhân gốc rễ
+### 3.2 Các seed được phân loại `NOT_VERIFIED` trong tập 10 seed
 
-Qua việc phân tích hành vi của mô hình và runner trên nhiều seed, các rủi ro flaky tiềm ẩn được chỉ ra như sau:
+Các seed còn lại trong tập 10 seed khảo sát có chiều dài đường đi lớn hoặc rất lớn:
+- **Seed `1001`** (65 bước), **Seed `4242`** (93 bước), **Seed `7777`** (115 bước), **Seed `2024`** (127 bước), **Seed `8888`** (173 bước), **Seed `12345`** (231 bước).
+- **Phân loại**: **`NOT_VERIFIED`** (Chưa kiểm chứng runtime).
+- **Lý do**: Các seed dài cần từ 10 đến 25 phút chạy UI liên tục cho mỗi lượt test đơn lẻ (ước tính tổng thời gian vượt quá 1.5 giờ). Để đảm bảo an toàn tài nguyên máy phát triển và kịp mốc bàn giao 17/11, các seed này được giữ ở trạng thái mô hình và sẽ được khuyến nghị đưa vào suite kiểm thử định kỳ (nightly/stress suite).
 
-### 4.1 Biến thiên chiều dài đường đi và hiện tượng lặp chu trình (Loop Amplification)
+### 3.3 Khảo sát tĩnh về độ phủ mô hình của GraphWalker (Static Gate)
 
-**Hiện tượng**:
-- Tại trạng thái khởi đầu `v_NoBooking`, có 2 lựa chọn cạnh xuất phát: `e_CreateAcceptedBooking` và `e_CreatePendingBooking`.
-- Tại `v_Pending`, có 3 lựa chọn rẽ nhánh: `e_ConfirmPendingBooking`, `e_RejectPendingBooking`, và `e_CancelPendingBooking`.
-- Do thuật toán `random(edge_coverage(100))` chọn ngẫu nhiên theo phân phối đều tại mỗi đỉnh, nếu một nhánh hiếm gặp (ví dụ `e_CancelPendingBooking`) không được chọn sớm, GraphWalker sẽ tiếp tục duyệt qua các nhánh khác và quay về `v_NoBooking` thông qua `e_StartNewBookingAfterCancel` hoặc `e_StartNewBookingAfterReject`.
-- Ví dụ ở Seed `81618`, cạnh `e_StartNewBookingAfterCancel` bị lặp lại **25 lần**, `e_CancelRescheduledBooking` lặp lại **17 lần**, trong khi `e_CancelPendingBooking` chỉ xuất hiện **1 lần duy nhất** ở cuối hành trình.
+*Lưu ý: Bảng dưới đây thể hiện khả năng sinh đường đi offline của thuật toán `random(edge_coverage(100))` bằng GraphWalker CLI 4.3.3 trên file `booking-model.json`. Kết quả sinh đường đi không đại diện cho việc kiểm thử ứng dụng thật.*
 
-**Tác động gây Flaky**:
-- Khi số bước tăng từ 41 bước lên tới 311 bước, thời gian chạy E2E qua trình duyệt tăng từ ~3 phút lên hơn 20 phút.
-- Chạy liên tục hàng trăm thao tác UI trong cùng một phiên Playwright làm tăng tải heap của Chromium, tăng xác suất gặp transient lag, chậm phản hồi mạng cục bộ hoặc vượt quá timeout của test runner.
+- **Khảo sát mở rộng trên 30 seed ngẫu nhiên** (nguồn: script đo kiểm tra lặp với generator của GraphWalker CLI):
+  - Số seed khảo sát: 30
+  - Tỉ lệ sinh đường đi bao phủ đủ 12 edge và 7 vertex: **100% (30/30 seeds)**.
+  - Số bước trung bình: **106.67 bước** (~53 cạnh).
+  - Số bước ngắn nhất: **41 bước** (Seed `26260`, 20 cạnh).
+  - Số bước dài nhất: **311 bước** (Seed `81618`, 155 cạnh).
+  - Không có seed nào bị kẹt vòng lặp vô hạn hay vượt ngưỡng trần 1000 bước của harness runner.
 
-### 4.2 Cạn kiệt khung giờ khả dụng (Slot Depletion & Blocker Collision)
+---
 
-**Hiện tượng**:
-- Cạnh `e_RescheduleSlotUnavailable` chặn slot bằng cách ghi nhận request reschedule và tạo một booking blocker trực tiếp trong DB cho cùng khoảng thời gian `start/end`.
-- Tiếp đó, cạnh `e_SelectAnotherSlot` mở lại giao diện chọn lịch và gọi helper `selectSecondAvailableTimeSlotNextMonth(page)`.
-- Khi một seed lặp lại cạnh `e_RescheduleSlotUnavailable` nhiều lần (ví dụ seed `1001` lặp 6 lần, seed `81618` lặp 14 lần), hệ thống tạo ra 6 đến 14 booking blocker liên tiếp trong cùng một khoảng ngày.
+## 4. Phân tích độ ổn định và nguy cơ Flaky
 
-**Tác động gây Flaky**:
-- Helper `selectSecondAvailableTimeSlotNextMonth` luôn chọn slot khả dụng thứ 2 của tháng tiếp theo. Nếu nhiều slot bị chặn dần và các slot trong ngày làm việc bị chiếm hết, việc chọn slot có thể bị chậm trễ hoặc thất bại nếu UI không tự cuộn sang ngày tiếp theo, dẫn đến lỗi `"action unavailable or timed out"`.
+Dựa trên log thực tế thu được từ 4 phiên chạy thành công và mã nguồn harness, các nhận định được phân loại rõ ràng giữa **dữ liệu đo lường thực tế** và **giả thuyết chưa đo**:
 
-### 4.3 Rò rỉ phiên làm việc giữa các chu trình (Session & Fixture Isolation)
+### 4.1 Đo lường thực tế: Quan hệ giữa độ dài đường đi và thời gian thực thi
 
-**Hiện tượng**:
-- Trong mỗi chu trình kết thúc booking cũ (`e_StartNewBookingAfterCancel` / `e_StartNewBookingAfterReject`), harness gọi hàm `freshHost()`.
-- Hàm này dọn sạch cookies (`await page.context().clearCookies()`), chèn cookie bỏ qua timezone popup, tạo một synthetic user mới trong DB và chuyển hướng trang.
+Từ log thực tế của 4 seed đã chạy, thời gian thực thi Playwright qua browser tăng gần như tuyến tính theo số bước:
+- Seed 3030 (31 bước): **95 giây** (~3.06 giây/bước)
+- Seed 6006 (41 bước): **91 giây** (~2.22 giây/bước)
+- Seed 9999 (59 bước): **176 giây** (~2.98 giây/bước)
+- Seed 5555 (61 bước): **234 giây** (~3.83 giây/bước)
 
-**Tác động gây Flaky**:
-- Nếu lệnh `clearCookies()` hoặc thao tác hủy session NextAuth không hoàn tất trước khi điều hướng tới URL host mới, trình duyệt có thể mang session của host cũ sang host mới, khiến oracle kiểm tra DB `(await read()).length === 0` bị sai lệch.
-- Việc commit `dcb722f454` trước đó đã chủ động bổ sung `clearCookies()` chính là để khắc phục hiện tượng này, và kết quả kiểm thử đa seed xác nhận cơ chế này hoạt động ổn định khi được gọi lặp lại.
+**Kết luận thực nghiệm**: Mỗi chu trình tương tác UI (chọn ngày, chọn giờ, điền form, click submit và chờ oracle DB) tiêu tốn trung bình từ **2.5 đến 3.8 giây**. Với các seed dài như 12345 (231 bước), thời gian ước tính sẽ vào khoảng **12 đến 15 phút**, đòi hỏi test runner phải duy trì kết nối ổn định liên tục.
 
-### 4.4 Hydration delay trên các trang danh sách booking
+### 4.2 Đo lường thực tế: Cơ chế cách ly dữ liệu qua `freshHost()`
 
-**Hiện tượng**:
-- Trang `/bookings/upcoming` và `/bookings/unconfirmed` sử dụng client-side rendering kết hợp hydration.
-- Các hành động tìm kiếm dropdown action (`actionIndex`) yêu cầu chờ element hiển thị (`await actions.first().waitFor({ state: "visible" })`).
+Trong 4 lần chạy thật, harness đã khởi tạo tổng cộng **16 chu trình host mới** (`user-0-...`) thông qua `e_StartNewBookingAfterCancel` và `e_StartNewBookingAfterReject`:
+- Tại mỗi chu trình, lệnh `await page.context().clearCookies()` và tạo user mới trong DB được thực thi.
+- Log server và log oracle xác nhận: Trong toàn bộ 16 lần chuyển đổi giữa các chu trình, kiểm tra DB `(await read()).length === 0` đều đạt ngay lập tức. Không xuất hiện hiện tượng rò rỉ cookie hoặc booking của host cũ sang host mới.
 
-**Tác động gây Flaky**:
-- Trên các seed có số lần reschedule/cancel cao, danh sách booking trong DOM dài ra. Nếu hydration bị trễ do CPU throttle, Playwright có thể đọc danh sách action khi chưa hoàn tất gắn event listener, dẫn đến click trượt hoặc không kích hoạt được dropdown.
+### 4.3 Đo lường thực tế: Kiểm chứng cạnh chặn slot `e_RescheduleSlotUnavailable`
+
+Trên cả 4 seed, cạnh `e_RescheduleSlotUnavailable` đều được thực thi thành công:
+- Request gửi tới server bị chặn đúng slot bởi booking blocker trong DB, trả về mã lỗi HTTP:
+  ```text
+  POST /api/book/event 409 in 237ms
+  ```
+- Oracle DB sau đó xác nhận: Booking cũ giữ nguyên trạng thái `ACCEPTED`, không bị sửa đổi, và không có booking mới phát sinh từ `fromReschedule`.
+- Cạnh tiếp theo `e_SelectAnotherSlot` mở lại giao diện và chọn thành công slot khả dụng khác mà không gặp lỗi xung đột trên các seed vừa.
+
+### 4.4 Các nguy cơ Flaky tiềm ẩn (Giả thuyết chưa đo đối với các seed dài > 100 bước)
+
+Đối với các seed có độ dài lớn (như Seed 81618 có 311 bước hay Seed 12345 có 231 bước), các rủi ro lý thuyết cần lưu ý gồm:
+- *Giả thuyết Cạn kiệt slot (Slot Depletion)*: Cạnh `e_RescheduleSlotUnavailable` tạo thêm 1 booking blocker trong DB sau mỗi lần kích hoạt. Nếu một seed dài lặp lại cạnh này nhiều lần (ví dụ trên 10-15 lần trong cùng một phiên), số slot trống trong ngày làm việc có thể bị lấp đầy, đòi hỏi helper `selectSecondAvailableTimeSlotNextMonth` phải có cơ chế tự động chuyển sang các ngày tiếp theo trong tháng.
+- *Giả thuyết Tải bộ nhớ trình duyệt (Browser Heap Accumulation)*: Phiên Chromium chạy liên tục hàng trăm tương tác SPA có thể tích lũy heap memory, dẫn đến việc xử lý React hydration chậm dần trên các trang danh sách booking `/bookings/upcoming`.
+
+---
 
 ## 5. Kết luận và Khuyến nghị
 
-1. **Về độ ổn định của Mô hình (Model Stability)**:
-   - Mô hình Booking Model v2 đạt tỉ lệ thành công **100% (30/30 runs)** trong việc sinh đường đi đảm bảo đầy đủ 12 edge và 7 vertex với GraphWalker CLI 4.3.3.
-   - Không phát hiện trường hợp kẹt dead-end hay vượt ngưỡng trần 1000 bước.
+1. **Về độ ổn định Runtime**:
+   - MBT harness Model v2 trên nhánh `qa/issue-21-multi-seed-stability` đạt tỉ lệ **100% PASS** trên toàn bộ các seed được chạy thật (Seed 3030, 6006, 9999, 5555), với `dirty=false` và runtime Node v20.20.2.
+   - Không xuất hiện lỗi flaky hay rò rỉ dữ liệu giữa các phiên.
 
-2. **Khuyến nghị lựa chọn Seed trong CI/CD**:
-   - Đối với CI PR gating (yêu cầu tốc độ nhanh, dưới 5 phút): Khuyến nghị ghim các seed có đường đi ngắn và tối ưu, tiêu biểu là **Seed `6006`** (41 bước) hoặc **Seed `3030`** (31 bước).
-   - Đối với Nightly Stress Test (chạy kiểm thử độ bền hàng đêm): Khuyến nghị sử dụng bộ script đa seed `scripts/run-mbt-multi-seed.mjs` với tập 10 seed đại diện để kiểm tra độ bền của hệ thống dưới tải hành động kéo dài.
-
-3. **Cải tiến mã nguồn harness**:
-   - Đã nâng cấp `scripts/run-issue-06-mbt.mjs` hỗ trợ nhận tham số `--seed <giá trị>` từ CLI và biến môi trường `MBT_SEED`, lưu trữ giá trị `seed` vào file evidence JSON.
-   - Bổ sung công cụ điều phối `scripts/run-mbt-multi-seed.mjs` giúp tự động hóa việc chạy lặp nhiều seed và xuất bảng tổng kết đối chiếu.
+2. **Khuyến nghị cho CI/CD và quy trình kiểm thử**:
+   - **CI PR Gating (Mỗi lần mở PR)**: Sử dụng các seed ngắn và tối ưu, ưu tiên **Seed `3030`** (31 bước, ~1.5 phút) hoặc **Seed `6006`** (41 bước, ~1.5 phút) để đảm bảo thời gian chạy CI dưới 3 phút mà vẫn phủ trọn vẹn 100% cạnh và đỉnh của mô hình.
+   - **Nightly Stress Testing**: Sử dụng `scripts/run-mbt-multi-seed.mjs` để chạy các seed dài hơn trong các đợt kiểm thử định kỳ không yêu cầu phản hồi tức thì.
