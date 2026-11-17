@@ -11,6 +11,11 @@ const output = (result) =>
 const git = (args) =>
   command("git", ["-c", `safe.directory=${process.cwd().replaceAll("\\", "/")}`, ...args]);
 const model = JSON.parse(readFileSync("docs/qa/model/booking-model.json", "utf8")).models[0];
+const seedIndex = process.argv.indexOf("--seed");
+const seed =
+  seedIndex !== -1 && process.argv[seedIndex + 1]
+    ? process.argv[seedIndex + 1]
+    : process.env.MBT_SEED || "6006";
 const now = new Date();
 const evidenceFile = resolve(`docs/qa/evidence/issue-06-${now.toISOString().replaceAll(/[:.]/g, "-")}.json`);
 mkdirSync("docs/qa/evidence", { recursive: true });
@@ -21,7 +26,8 @@ const postgres = command("docker", ["exec", "caldiy-issue04-db", "postgres", "--
 const jar = resolve("tools/graphwalker/graphwalker-cli-4.3.3.jar");
 const evidence = {
   gitSHA: output(git(["rev-parse", "HEAD"])),
-  dirty: output(git(["status", "--porcelain"])) !== "",
+  dirty: output(git(["status", "--porcelain", "--", ":(exclude)docs/qa/evidence"])).trim() !== "",
+  seed: String(seed),
   utc: now.toISOString(),
   local: new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Asia/Saigon",
@@ -55,7 +61,7 @@ const javaMajor = Number(output(java).match(/version "(\d+)/)?.[1]);
 if (javaMajor < 11 || javaMajor > 21 || !Number.isInteger(javaMajor))
   evidence.errors.push("Java 11..21 required; Java 22 or newer is rejected (including Java 25)");
 if (!existsSync(jar)) evidence.errors.push("Missing tools/graphwalker/graphwalker-cli-4.3.3.jar");
-if (!existsSync("node_modules"))
+if (!process.argv.includes("--generate-only") && !existsSync("node_modules"))
   evidence.errors.push("Missing node_modules; install existing locked dependencies before running");
 const finish = () => {
   writeFileSync(evidenceFile, JSON.stringify(evidence, null, 2));
@@ -72,7 +78,7 @@ if (evidence.errors.length === 0) {
       jar,
       "offline",
       "--seed",
-      "6006",
+      String(seed),
       "-m",
       "docs/qa/model/booking-model.json",
       "random(edge_coverage(100))",

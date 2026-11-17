@@ -81,13 +81,14 @@ Harness hiện tại dùng `docs/qa/model/booking-model.json` tương thích Mod
 (12 edge, 7 vertex) theo hợp đồng đã thống nhất tại PR #30 (`docs/qa/model/booking-model-v2.json`).
 Model v1 lưu tại `docs/qa/model/booking-model-v1.json` để tham chiếu hồi quy.
 
-Runner tự gọi offline với seed 6006, kiểm tra liên tục các source/target và
+Runner mặc định dùng seed 6006 hoặc nhận seed qua `--seed <số>` / `MBT_SEED`, kiểm tra liên tục các source/target và
 coverage của đường đi trước khi chạy browser. Không nhập đường đi viết tay:
 
 ```powershell
-node scripts/run-issue-06-mbt.mjs --generate-only
-node scripts/run-issue-06-mbt.mjs
-node .yarn/releases/yarn-4.12.0.cjs biome check --write apps/web/playwright/mbt/issue-06.e2e.ts apps/web/playwright/mbt/playwright.config.ts scripts/run-issue-06-mbt.mjs
+node scripts/run-issue-06-mbt.mjs --generate-only --seed 6006
+node scripts/run-issue-06-mbt.mjs --seed 6006
+node scripts/run-mbt-multi-seed.mjs --generate-only --seeds=1001,2024,3030,4242,5555,6006,7777,8888,9999,12345
+node .yarn/releases/yarn-4.12.0.cjs biome check --write apps/web/playwright/mbt/issue-06.e2e.ts apps/web/playwright/mbt/playwright.config.ts scripts/run-issue-06-mbt.mjs scripts/run-mbt-multi-seed.mjs
 node .yarn/releases/yarn-4.12.0.cjs type-check:ci --force
 ```
 
