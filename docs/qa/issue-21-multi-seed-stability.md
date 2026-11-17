@@ -8,7 +8,7 @@ Tài liệu này tổng hợp kết quả kiểm thử thực tế (runtime exec
 - **Nhánh thực hiện**: `qa/issue-21-multi-seed-stability`
 - **Target commit SHA gốc**: `8b06b465838a25dbb3a3171f90ec198b61e721fc`
 - **Mô hình kiểm thử**: `docs/qa/model/booking-model.json` (Model v2: 12 edge, 7 vertex)
-- **Hạn chót**: `2026-11-17`
+- **Hạn chót**: `2026-11-17` (bổ sung hiệu chỉnh trước `2026-11-20` phục vụ báo cáo #22)
 - **Tiêu chuẩn an toàn**: Tuân thủ nghiêm ngặt whitelist của oracle Issue #17/#18; toàn bộ evidence đã được khử khuẩn (sanitized), tuyệt đối không commit secret, email thật, booking UID, token hay URL quản lý booking.
 
 ## 2. Môi trường thực thi thực tế
@@ -31,18 +31,25 @@ Môi trường kiểm thử được chuẩn bị chính xác theo tài liệu c
 
 Theo quy định tại `docs/qa/issue-17-mbt-principles.md`, kết quả chỉ được công nhận là `PASS` khi toàn bộ chuỗi hành động được thực thi qua giao diện người dùng Playwright và được xác minh tức thì bằng oracle truy vấn DB PostgreSQL cục bộ.
 
-Dưới đây là kết quả thực tế của 4 seed ngắn và vừa được thực thi toàn diện:
+Dưới đây là kết quả thực tế của 4 seed ngắn và vừa được thực thi toàn diện ngày 17/11 trên SHA `51b392b3e1`:
 
-| Seed | Số bước | Cạnh (Pass/Tổng) | Đỉnh (Pass/Tổng) | Thời gian chạy | Kết quả Runtime | Trạng thái Dirty | Node Version | File Evidence (Runtime Pass) |
+| Seed | Số bước | Cạnh (Pass/Tổng) | Đỉnh (Pass/Tổng) | Thời gian chạy | Kết quả Runtime | Trạng thái Dirty | Node Version | File Evidence (17/11 - SHA `51b392b3e1`) |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :--- |
 | **3030** | 31 | 12/12 (100%) | 7/7 (100%) | **95s** (~1.5m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-20-53-311Z.json`](evidence/issue-06-2026-11-17T12-20-53-311Z.json) |
 | **6006** | 41 | 12/12 (100%) | 7/7 (100%) | **91s** (~1.5m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-27-46-659Z.json`](evidence/issue-06-2026-11-17T12-27-46-659Z.json) |
 | **9999** | 59 | 12/12 (100%) | 7/7 (100%) | **176s** (~2.9m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-39-00-071Z.json`](evidence/issue-06-2026-11-17T12-39-00-071Z.json) |
 | **5555** | 61 | 12/12 (100%) | 7/7 (100%) | **234s** (~3.9m) | **PASS** | `dirty=false` | `v20.20.2` | [`issue-06-2026-11-17T12-42-36-101Z.json`](evidence/issue-06-2026-11-17T12-42-36-101Z.json) |
 
-- **Tỉ lệ Pass chạy thật (Runtime Pass Rate)**: **4/4 runs (100%)**.
-- **Số lỗi flaky / sai lệch oracle ghi nhận**: **0 lỗi**.
-- **Tính lặp lại (Reproducibility)**: Seed `6006` sinh đường đi 41 bước hoàn toàn trùng khớp với lần chạy baseline ngày 10/11/2026 và chạy pass 100% với `dirty=false`.
+**Ghi chú đối chiếu các lần chạy trước ngày 16/11**:
+Bốn lần chạy trước ngày 16/11 trên SHA cũ cũng pass 12/12 edge, 7/7 vertex (`dirty=false`, Node `v20.20.2`):
+- Seed 3030: [`issue-06-2026-11-16T15-59-57-363Z.json`](evidence/issue-06-2026-11-16T15-59-57-363Z.json) (SHA `1d116d3891`)
+- Seed 6006: [`issue-06-2026-11-16T16-19-26-881Z.json`](evidence/issue-06-2026-11-16T16-19-26-881Z.json) (SHA `59077feaa8`)
+- Seed 5555: [`issue-06-2026-11-16T16-39-53-778Z.json`](evidence/issue-06-2026-11-16T16-39-53-778Z.json) (SHA `59077feaa8`)
+- Seed 9999: [`issue-06-2026-11-16T16-42-26-253Z.json`](evidence/issue-06-2026-11-16T16-42-26-253Z.json) (SHA `59077feaa8`)
+
+Kết quả chính của tài liệu sử dụng 4 lần chạy ngày 17/11 trên SHA `51b392b3e1`. Khi tổng hợp cả 2 phiên chạy (ngày 16/11 và 17/11), tổng số lần chạy thật là **8 lần** (cùng 4 seed, 2 lần mỗi seed), và **tỉ lệ pass là 8/8 (100%)**, ghi nhận **0 lỗi flaky / sai lệch oracle**.
+
+- **Tính lặp lại (Reproducibility)**: Seed `6006` sinh đường đi 41 bước hoàn toàn trùng khớp với lần chạy baseline ngày 10/11/2026 và chạy pass 100% qua cả 2 phiên chạy với `dirty=false`.
 
 ### 3.2 Các seed được phân loại `NOT_VERIFIED` trong tập 10 seed
 
@@ -55,7 +62,7 @@ Các seed còn lại trong tập 10 seed khảo sát có chiều dài đường 
 
 *Lưu ý: Bảng dưới đây thể hiện khả năng sinh đường đi offline của thuật toán `random(edge_coverage(100))` bằng GraphWalker CLI 4.3.3 trên file `booking-model.json`. Kết quả sinh đường đi không đại diện cho việc kiểm thử ứng dụng thật.*
 
-- **Khảo sát mở rộng trên 30 seed ngẫu nhiên** (nguồn: script đo kiểm tra lặp với generator của GraphWalker CLI):
+- **Khảo sát mở rộng trên 30 seed ngẫu nhiên** (số liệu đo đạc cục bộ từ generator GraphWalker CLI 4.3.3 khi khảo sát tính bao phủ mô hình):
   - Số seed khảo sát: 30
   - Tỉ lệ sinh đường đi bao phủ đủ 12 edge và 7 vertex: **100% (30/30 seeds)**.
   - Số bước trung bình: **106.67 bước** (~53 cạnh).
@@ -63,36 +70,44 @@ Các seed còn lại trong tập 10 seed khảo sát có chiều dài đường 
   - Số bước dài nhất: **311 bước** (Seed `81618`, 155 cạnh).
   - Không có seed nào bị kẹt vòng lặp vô hạn hay vượt ngưỡng trần 1000 bước của harness runner.
 
+Lệnh tái tạo khảo sát tính bao phủ mô hình trên tập seed bằng công cụ có sẵn trong repo:
+```powershell
+# Chạy khảo sát offline generator qua runner (dữ liệu chạy cục bộ, không ghi đè evidence booking thật):
+node scripts/run-mbt-multi-seed.mjs --generate-only --seeds=1001,2024,3030,4242,5555,6006,7777,8888,9999,12345
+
+# Hoặc sinh kiểm tra lặp với PowerShell:
+1..30 | ForEach-Object { node scripts/run-issue-06-mbt.mjs --generate-only --seed $_ }
+```
+
 ---
 
 ## 4. Phân tích độ ổn định và nguy cơ Flaky
 
-Dựa trên log thực tế thu được từ 4 phiên chạy thành công và mã nguồn harness, các nhận định được phân loại rõ ràng giữa **dữ liệu đo lường thực tế** và **giả thuyết chưa đo**:
+Dựa trên dữ liệu thực tế thu được từ các phiên chạy thành công và mã nguồn harness, các nhận định được phân loại rõ ràng giữa **dữ liệu đo lường thực tế** và **giả thuyết chưa đo**:
 
 ### 4.1 Đo lường thực tế: Quan hệ giữa độ dài đường đi và thời gian thực thi
 
-Từ log thực tế của 4 seed đã chạy, thời gian thực thi Playwright qua browser tăng gần như tuyến tính theo số bước:
+Từ thời gian chạy thực tế của 4 seed, thời gian thực thi Playwright qua browser tăng gần như tuyến tính theo số bước:
 - Seed 3030 (31 bước): **95 giây** (~3.06 giây/bước)
 - Seed 6006 (41 bước): **91 giây** (~2.22 giây/bước)
 - Seed 9999 (59 bước): **176 giây** (~2.98 giây/bước)
 - Seed 5555 (61 bước): **234 giây** (~3.83 giây/bước)
 
-**Kết luận thực nghiệm**: Mỗi chu trình tương tác UI (chọn ngày, chọn giờ, điền form, click submit và chờ oracle DB) tiêu tốn trung bình từ **2.5 đến 3.8 giây**. Với các seed dài như 12345 (231 bước), thời gian ước tính sẽ vào khoảng **12 đến 15 phút**, đòi hỏi test runner phải duy trì kết nối ổn định liên tục.
+**Kết luận thực nghiệm**: Mỗi chu trình tương tác UI (chọn ngày, chọn giờ, điền form, click submit và đối chiếu oracle DB) tiêu tốn trung bình từ **2.2 đến 3.8 giây**. Với các seed dài như 12345 (231 bước), thời gian ước tính sẽ vào khoảng **12 đến 15 phút**, đòi hỏi test runner phải duy trì kết nối ổn định liên tục.
 
 ### 4.2 Đo lường thực tế: Cơ chế cách ly dữ liệu qua `freshHost()`
 
-Trong 4 lần chạy thật, harness đã khởi tạo tổng cộng **16 chu trình host mới** (`user-0-...`) thông qua `e_StartNewBookingAfterCancel` và `e_StartNewBookingAfterReject`:
+Trong 4 lần chạy thật ngày 17/11, harness đã thực thi tổng cộng **21 chu trình chuyển đổi host mới** (`user-0-...`) thông qua các cạnh `e_StartNewBookingAfterCancel` và `e_StartNewBookingAfterReject` (cụ thể: Seed 3030 có 3 lần, Seed 6006 có 5 lần, Seed 9999 có 7 lần, Seed 5555 có 6 lần; tổng cộng 3 + 5 + 7 + 6 = 21 lần chuyển đổi):
 - Tại mỗi chu trình, lệnh `await page.context().clearCookies()` và tạo user mới trong DB được thực thi.
-- Log server và log oracle xác nhận: Trong toàn bộ 16 lần chuyển đổi giữa các chu trình, kiểm tra DB `(await read()).length === 0` đều đạt ngay lập tức. Không xuất hiện hiện tượng rò rỉ cookie hoặc booking của host cũ sang host mới.
+- Oracle xác nhận: Trong toàn bộ 21 lần chuyển đổi giữa các chu trình, kiểm tra DB `(await read()).length === 0` đều đạt ngay lập tức. Không xuất hiện hiện tượng rò rỉ cookie hoặc booking của host cũ sang host mới.
 
 ### 4.3 Đo lường thực tế: Kiểm chứng cạnh chặn slot `e_RescheduleSlotUnavailable`
 
-Trên cả 4 seed, cạnh `e_RescheduleSlotUnavailable` đều được thực thi thành công:
-- Request gửi tới server bị chặn đúng slot bởi booking blocker trong DB, trả về mã lỗi HTTP:
-  ```text
-  POST /api/book/event 409 in 237ms
-  ```
-- Oracle DB sau đó xác nhận: Booking cũ giữ nguyên trạng thái `ACCEPTED`, không bị sửa đổi, và không có booking mới phát sinh từ `fromReschedule`.
+Trên cả 4 seed, cạnh `e_RescheduleSlotUnavailable` đều được kiểm chứng thành công và được xác nhận thông qua các trường dữ liệu oracle đã lưu trong cả 4 file evidence JSON:
+- `slotUnavailable.httpStatus`: `409` (yêu cầu reschedule gửi đi bị server từ chối đúng như thiết kế do slot đã bị blocker chiếm dụng).
+- `slotUnavailable.requestSlotBlocked`: `true` (slot được blocker chặn chính xác theo khoảng `start/end`).
+- `slotUnavailable.originalUnchanged`: `true` (booking gốc A giữ nguyên trạng thái `ACCEPTED`, không bị sửa đổi hay hủy bỏ).
+- `slotUnavailable.replacementCount`: `0` (không có booking thay thế nào được sinh ra từ `fromReschedule = a`).
 - Cạnh tiếp theo `e_SelectAnotherSlot` mở lại giao diện và chọn thành công slot khả dụng khác mà không gặp lỗi xung đột trên các seed vừa.
 
 ### 4.4 Các nguy cơ Flaky tiềm ẩn (Giả thuyết chưa đo đối với các seed dài > 100 bước)
@@ -106,7 +121,7 @@ Trên cả 4 seed, cạnh `e_RescheduleSlotUnavailable` đều được thực t
 ## 5. Kết luận và Khuyến nghị
 
 1. **Về độ ổn định Runtime**:
-   - MBT harness Model v2 trên nhánh `qa/issue-21-multi-seed-stability` đạt tỉ lệ **100% PASS** trên toàn bộ các seed được chạy thật (Seed 3030, 6006, 9999, 5555), với `dirty=false` và runtime Node v20.20.2.
+   - MBT harness Model v2 trên nhánh `qa/issue-21-multi-seed-stability` đạt tỉ lệ **8/8 PASS (100%)** qua cả hai phiên chạy ngày 16/11 và 17/11 trên 4 seed (3030, 6006, 9999, 5555), với `dirty=false` và runtime Node v20.20.2.
    - Không xuất hiện lỗi flaky hay rò rỉ dữ liệu giữa các phiên.
 
 2. **Khuyến nghị cho CI/CD và quy trình kiểm thử**:
