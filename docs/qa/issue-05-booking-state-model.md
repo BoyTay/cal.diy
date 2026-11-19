@@ -87,7 +87,7 @@ Một phiên MBT đạt khi thỏa cả bốn nhóm sau:
 
 ## 5. Ba chuỗi kiểm thử tối thiểu
 
-Các chuỗi dưới đây là kế hoạch kiểm thử và oracle. Chuỗi S01 đã có kết quả chạy trong Issue 04; S02-S04 phải chạy qua form/ứng dụng và đọc oracle DB sau từng bước. Fixture Prisma trong test cũ chỉ được dùng để tham khảo token confirm/reject, không được coi là bằng chứng thay thế cho application flow.
+Các chuỗi dưới đây là kế hoạch kiểm thử và oracle. Chuỗi S01 đã có kết quả chạy trong Issue 04; S02-S04 phải chạy qua form/ứng dụng và đọc oracle DB sau từng bước. Fixture Prisma trong test cũ chỉ được dùng để tham khảo token confirm/reject, không được coi là bằng chứng thay thế cho application flow. **Cập nhật (19/11/2026):** S02-S04 đã chạy qua form và UI organizer và pass trong harness model v2 (evidence [`issue-06-2026-11-10T05-41-58-918Z.json`](evidence/issue-06-2026-11-10T05-41-58-918Z.json), 12/12 edge, 7/7 vertex); xem [báo cáo cuối](final-report.md).
 
 | Chuỗi | Các bước | Nhánh được phủ | Oracle cuối chuỗi |
 | --- | --- | --- | --- |
@@ -106,7 +106,7 @@ Các chuỗi dưới đây là kế hoạch kiểm thử và oracle. Chuỗi S01
 
 - `AWAITING_HOST`, team/round-robin, seats, recurring, payment, calendar ngoài, email và webhook delivery nằm ngoài phạm vi issue này; không được tính vào state coverage.
 - Chưa kiểm chứng retry/resubmit token và các chuyển tiếp sau khi booking đã bắt đầu.
-- `REJECTED` được xác nhận bằng bài test token; chưa có bằng chứng UI độc lập cho mọi đường confirm/reject.
+- `REJECTED` được xác nhận bằng bài test token; chưa có bằng chứng UI độc lập cho mọi đường confirm/reject. **Cập nhật (19/11/2026):** harness model v2 đã chạy confirm, reject và hủy khi `PENDING` qua UI organizer và pass (evidence 10/11 và 17/11).
 - Model GraphWalker dùng định dạng JSON của GraphWalker 4.3.3, đặt `v_NoBooking` làm start element và generator mặc định `random(edge_coverage(100))`. `vertex_coverage(100)` là mức tối thiểu để kiểm tra mọi vertex; state coverage nghiệp vụ tối thiểu là 4/5 vì `AWAITING_HOST` nằm ngoài phạm vi.
 - Lệnh kiểm tra v2 với CLI 4.3.3 cần truyền model và generator thành cùng một tham số `-m`: `java -jar tools/graphwalker/graphwalker-cli-4.3.3.jar check -m docs/qa/model/booking-model-v2.json "random(edge_coverage(100))"` và `java -jar tools/graphwalker/graphwalker-cli-4.3.3.jar offline -m docs/qa/model/booking-model-v2.json "random(edge_coverage(100))"`. CLI 4.3.3 không chấp nhận `check -m <file>` đơn lẻ vì option `-m` yêu cầu thêm generator/stop condition.
 - Issue 01 chứng minh quan hệ UID qua ảnh đã che và truy vấn sau chuỗi, nhưng không được dùng để suy ra trạng thái database trung gian. Issue 04 là nguồn quan sát cho T01/T05/T06 vì nó đọc DB ngay sau từng bước.
