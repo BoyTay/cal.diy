@@ -128,7 +128,14 @@ node scripts/run-issue-06-mbt.mjs
 
 - Static gate: `booking-model-v2.json` được GraphWalker `check` kiểm tra không lỗi; `offline --seed 6006` sinh được các nhánh `PENDING -> ACCEPTED`, `PENDING -> REJECTED`, `PENDING -> CANCELLED`, reschedule và slot unavailable. Đây chỉ là model/static evidence.
 - Application/API gate: PostgreSQL 17 local, 595 migrations, Prisma Client, Next.js local và Chromium đã được chuẩn bị; `booking-confirm-reject.e2e.ts` pass `2/2` với booking `PENDING` được tạo bằng Prisma fixture. Kết quả này chỉ xác nhận handler/token và DB oracle, không chứng minh S02-S04 qua form.
-- UI/application flow: S02-S04 qua form và nhánh reschedule/cancel UI hiện `NOT_VERIFIED`. `issue-04-booking-lifecycle.e2e.ts` dừng ở helper `incrementMonth`; webpack cũng log `node:path`/`node:process`. Không tính các kết quả này là runtime pass.
+- UI/application flow (trạng thái ngày 04/11, đã được thay thế bởi mục "Cập nhật" bên dưới): S02-S04 qua form và nhánh reschedule/cancel UI hiện `NOT_VERIFIED`. `issue-04-booking-lifecycle.e2e.ts` dừng ở helper `incrementMonth`; webpack cũng log `node:path`/`node:process`. Không tính các kết quả này là runtime pass.
+
+### Cập nhật sau Issue #18 (10/11 đến 19/11/2026)
+
+- Harness model v2 (PR #31) đã chạy S02-S04 qua form đặt lịch và UI organizer, đọc oracle DB sau từng bước: evidence [`issue-06-2026-11-10T05-41-58-918Z.json`](evidence/issue-06-2026-11-10T05-41-58-918Z.json) ghi `result: pass`, edge 12/12, vertex 7/7, `dirty=false`, SHA `9acfc728fe`.
+- Độ ổn định đa seed (PR #35, #36): 8/8 lần chạy thật pass trên 4 seed; sáu seed dài là `NOT_VERIFIED`.
+- Lần xác nhận từ checkout sạch ngày 19/11: 2/3 pass, 1 fail do khởi động lạnh; xem [báo cáo cuối](final-report.md) mục 6.5.
+- Vì vậy các tiêu chí ở mục 5.2 đã đạt cho model v2 trong phạm vi nêu; các mục "NOT_VERIFIED" ở phần ngày 04/11 chỉ còn giá trị lịch sử.
 
 ## 7. Quyết định hoàn thành
 

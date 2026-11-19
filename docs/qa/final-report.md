@@ -138,12 +138,12 @@ Chạy lại từ một bản checkout riêng tại `b7c0cd44de` (mã đã chố
 
 ## 8. Lưu ý khi đọc các tài liệu thành phần
 
-Một số tài liệu được viết trước khi harness model v2 hoàn thành và vẫn giữ nội dung lịch sử. Khi mâu thuẫn, **các evidence ngày 10/11 và 17/11 là kết quả mới nhất**:
+Một số tài liệu được viết trước khi harness model v2 hoàn thành và vẫn giữ nội dung lịch sử. Khi mâu thuẫn, **các evidence ngày 10/11 và 17/11 là kết quả mới nhất**. Trong PR này, các chỗ lịch sử quan trọng ở Phần D và Phần E đã được thêm ghi chú "Cập nhật", và hai UID giả ở Issue 01 đã được che:
 
-- [Phần D](issue-17-mbt-principles.md) mục "Kết quả chạy thực tế ngày 04/11/2026" ghi S02–S04 qua form là `NOT_VERIFIED` và `incrementMonth` dừng. Đó là trạng thái ngày 04/11. Sau Issue #18, ba chuỗi này đã chạy qua form và pass (evidence 10/11).
-- [Phần E](issue-05-booking-state-model.md) mục 5 và 6 mô tả S02–S04 là kế hoạch "phải chạy" và ghi `REJECTED` chưa có bằng chứng UI độc lập; hiện đã có evidence UI cho cả ba nhánh.
+- [Phần D](issue-17-mbt-principles.md) mục "Kết quả chạy thực tế ngày 04/11/2026" ghi S02–S04 qua form là `NOT_VERIFIED` và `incrementMonth` dừng. Đó là trạng thái ngày 04/11; mục "Cập nhật sau Issue #18" mới thêm cho biết ba chuỗi này đã chạy qua form và pass (evidence 10/11).
+- [Phần E](issue-05-booking-state-model.md) mục 5 và 6 mô tả S02–S04 là kế hoạch "phải chạy" và ghi `REJECTED` chưa có bằng chứng UI độc lập; đã thêm ghi chú cập nhật cho biết hiện có evidence UI cho cả ba nhánh.
 - [Issue 01](issue-01-booking-onboarding-architecture.md) và [khảo sát luồng](booking-flow-nghia.md) có cổng hoặc SHA cũ (cổng chuẩn hiện tại là 3000; SHA khảo sát riêng của từng tài liệu). Bản hợp nhất [Phần A–B](issue-08-system-goals-architecture.md) là nguồn dùng khi diễn giải.
-- [Issue 01](issue-01-booking-onboarding-architecture.md) mục 7 có hai UID booking của dữ liệu giả cục bộ, trong khi quy ước của dự án là không đưa UID booking vào tài liệu và evidence. Các UID này thuộc cơ sở dữ liệu thử nghiệm đã bỏ, không dẫn tới dữ liệu thật; nên thay bằng nhãn `UID A` và `UID B` nếu nhóm muốn tuân thủ quy ước tuyệt đối.
+- [Issue 01](issue-01-booking-onboarding-architecture.md) mục 7 từng ghi hai UID booking của dữ liệu giả cục bộ, trái quy ước không đưa UID booking vào tài liệu. Hai UID này đã được che trong PR này. Chúng vẫn còn trong lịch sử Git của các commit cũ; chúng thuộc cơ sở dữ liệu thử nghiệm đã bỏ, không dẫn tới dữ liệu thật.
 
 ## 9. Lịch sử công việc
 
